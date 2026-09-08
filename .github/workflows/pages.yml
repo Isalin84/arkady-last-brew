@@ -1,0 +1,47 @@
+name: Deploy game to GitHub Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check game
+        run: |
+          node --check game.js
+          node --check audio.js
+          node --check weapons-art.js
+          node tests/game.test.cjs
+          node tests/audio.test.cjs
+      - name: Assemble website
+        run: |
+          mkdir -p _site/assets/audio/voice _site/assets/audio/music _site/assets/audio/sfx
+          cp index.html style.css game.js audio.js weapons-art.js _site/
+          cp -R assets/art _site/assets/
+          cp assets/audio/voice/[0-9][0-9].mp3 _site/assets/audio/voice/
+          cp assets/audio/music/*.mp3 _site/assets/audio/music/
+          cp assets/audio/sfx/*.mp3 _site/assets/audio/sfx/
+          cp assets/audio/SOURCES.md _site/assets/audio/
+          touch _site/.nojekyll
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
