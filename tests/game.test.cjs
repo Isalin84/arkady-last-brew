@@ -10,6 +10,18 @@ const sandbox={document,window:{addEventListener(){}},performance:{now:()=>0},re
 vm.createContext(sandbox);vm.runInContext(readFileSync('game.js','utf8'),sandbox);
 vm.runInContext(`
 reset();
+// Real raycasting must read wall lettering left-to-right on all four faces.
+const originalDrawImage=ctx.drawImage;
+for(const angle of [0,Math.PI/2,Math.PI,Math.PI*1.5]){
+ player={x:3.5,y:3.5,a:angle,hp:100};
+ const columns=[];
+ ctx.drawImage=(...args)=>{if(args[5]===480||args[5]===500)columns.push(args[1]);};
+ drawWorld();
+ assert.equal(columns.length,2);
+ assert.ok(columns[1]>columns[0],'Mirrored wall at heading '+angle+': '+columns);
+}
+ctx.drawImage=originalDrawImage;
+reset();
 // Every enemy, pickup and exit approach is reachable from spawn.
 let queue=[[3,2]], seen=new Set(['3,2']);
 for(let k=0;k<queue.length;k++){let [x,y]=queue[k];for(let [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){let nx=x+dx,ny=y+dy,key=nx+','+ny;if(map[ny]?.[nx]===0&&!seen.has(key)){seen.add(key);queue.push([nx,ny]);}}}
@@ -28,5 +40,5 @@ reset();running=true;player.hp=50;player.x=1.5;player.y=4.5;tick(.01);assert.equ
 finish(false);assert.equal(dead,true);start();assert.equal(player.hp,100);assert.equal(kills,0);assert.equal(running,true);
 kills=12;enemies=[];player.x=13.5;player.y=14.5;tick(.01);assert.equal(won,true);assert.equal(running,false);
 start();assert.equal(kills,0);assert.equal(enemies.length,12);pause();assert.equal(running,false);start();assert.equal(running,true);
-console.log('PASS: reachability, collisions, projectile hits, all weapons, splash, pickups, death, victory, restart, pause');
+console.log('PASS: wall orientation on all four faces, reachability, collisions, projectile hits, all weapons, splash, pickups, death, victory, restart, pause');
 `,sandbox);
