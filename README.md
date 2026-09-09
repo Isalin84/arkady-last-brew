@@ -42,3 +42,8 @@ WASD — движение, мышь или стрелки влево/вправ�
 ## GitHub Pages
 
 Автоматическая публикация из ветки `main` через `.github/workflows/pages.yml`. Workflow запускает проверки и собирает только файлы сайта в Pages-артефакт. Все пути ресурсов относительные, поэтому игра работает в подкаталоге репозитория. Исходные пользовательские аудиозаписи исключены из Git; публичная версия содержит готовые игровые реплики и обработанную музыку.
+
+### v0.4 — Arkady is Back
+Меню в цветах Best Practice с оригинальным логотипом, фирменной зубчатой кромкой и новой обложкой Аркадия со скрещёнными руками. Логотипы студии размещены на трёх стенах цеха. Обложка создана встроенным ImageGen по пользовательскому референсу; файл `assets/art/arkady-cover.png`.
+
+Промпт обложки: cinematic brewery game cover; preserve Arkady's older gray-haired face from the supplied reference; arms crossed, plain navy shirt, character on right, brewery tanks and copper pipes, dark navy space on left for title, warm natural lighting, no text or logos.
