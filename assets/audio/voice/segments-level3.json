@@ -1,0 +1,79 @@
+{
+  "source": "ElevenLabs_2026-09-15T13_30_08_Arkady Clone_ivc_sp100_s50_sb75_se0_b_m2.mp3",
+  "voice": "Arkady Clone",
+  "model": "Eleven Multilingual v2",
+  "segments": [
+    {
+      "file": "30.mp3",
+      "sourceStart": 0,
+      "sourceEnd": 4.759
+    },
+    {
+      "file": "31.mp3",
+      "sourceStart": 6.047,
+      "sourceEnd": 11.326
+    },
+    {
+      "file": "32.mp3",
+      "sourceStart": 12.581,
+      "sourceEnd": 16.5
+    },
+    {
+      "file": "33.mp3",
+      "sourceStart": 17.737,
+      "sourceEnd": 21.636
+    },
+    {
+      "file": "34.mp3",
+      "sourceStart": 22.699,
+      "sourceEnd": 25.472
+    },
+    {
+      "file": "35.mp3",
+      "source": "ElevenLabs_2026-09-15T13_35_49_Arkady Clone_ivc_sp100_s50_sb75_se0_b_m2.mp3",
+      "sourceStart": 0,
+      "sourceEnd": 2.66
+    },
+    {
+      "file": "36.mp3",
+      "source": "ElevenLabs_2026-09-15T13_35_49_Arkady Clone_ivc_sp100_s50_sb75_se0_b_m2.mp3",
+      "sourceStart": 5.674,
+      "sourceEnd": 8.54
+    },
+    {
+      "file": "37.mp3",
+      "sourceStart": 33.189,
+      "sourceEnd": 34.677
+    },
+    {
+      "file": "38.mp3",
+      "sourceStart": 35.672,
+      "sourceEnd": 37.937
+    },
+    {
+      "file": "39.mp3",
+      "sourceStart": 38.996,
+      "sourceEnd": 40.936
+    },
+    {
+      "file": "40.mp3",
+      "sourceStart": 42.232,
+      "sourceEnd": 44.13
+    },
+    {
+      "file": "41.mp3",
+      "sourceStart": 45.466,
+      "sourceEnd": 47.778
+    },
+    {
+      "file": "42.mp3",
+      "sourceStart": 49.173,
+      "sourceEnd": 55.326
+    },
+    {
+      "file": "43.mp3",
+      "sourceStart": 56.621,
+      "sourceEnd": 64.026
+    }
+  ]
+}

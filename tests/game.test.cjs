@@ -41,7 +41,11 @@ finish(false);assert.equal(dead,true);start();assert.equal(player.hp,100);assert
 kills=12;enemies=[];player.x=13.5;player.y=14.5;tick(.01);assert.equal(transition,true);assert.equal(won,false);assert.equal(running,false);
 start();assert.equal(levelIndex,1);assert.equal(enemies.length,16);assert.ok(player.hp>=75);
 finish(false);start();assert.equal(levelIndex,1,'Death retries second level');assert.equal(kills,0);
-kills=levelTotal;enemies=[];player.x=18.2;player.y=16.5;tick(.01);assert.equal(won,true);assert.equal(transition,false);
+kills=levelTotal;enemies=[];player.x=18.2;player.y=16.5;tick(.01);assert.equal(won,false);assert.equal(transition,true);
+start();assert.equal(levelIndex,2);assert.equal(enemies.length,14);assert.equal(weapons[1].ammo,32);
+finish(false);start();assert.equal(levelIndex,2,'Death retries warehouse');assert.equal(storyHeard,false);
+kills=levelTotal;enemies=[];player.x=20.2;player.y=18.5;tick(.01);assert.equal(won,true);assert.equal(transition,false);
+assert.ok($('.intro p').innerHTML.includes('Кто там — пока неизвестно'));assert.ok(!/Нин[аы]|Стелл/.test($('.intro p').innerHTML));assert.ok($('.intro p').innerHTML.includes('продолжение следует'));assert.equal(LEVELS.length,3);
 start();assert.equal(kills,0);assert.equal(enemies.length,12);pause();assert.equal(running,false);start();assert.equal(running,true);
 // Both layouts: traversable spawn, every enemy and pickup, exit; props block movement.
 for(let index=0;index<LEVELS.length;index++){
@@ -56,5 +60,16 @@ loadLevel(1);running=true;player.hp=10000;
 enemies=[{x:6.5,y:5.5,type:3,hp:100,max:100,attack:0,hit:0,seed:0,alert:true}];
 for(let i=0;i<1000;i++)tick(.04);
 assert.ok(Math.hypot(enemies[0].x-player.x,enemies[0].y-player.y)<.85,'Awakened monster navigates around bottle conveyor');
+// Warehouse charge: visible warning, locked heading, speed, single hit, and rack stun.
+function truckAt(x,y,type=6){return {x,y,type,hp:ENEMY_TYPES[type].hp,max:ENEMY_TYPES[type].hp,attack:0,hit:0,seed:0,alert:true,mode:'hunt',phase:0,chargeCooldown:0,heading:0};}
+loadLevel(2);running=true;player.x=2.5;player.y=2.5;enemies=[truckAt(7.5,2.5)];
+let truck=enemies[0];tick(.01);assert.equal(truck.mode,'windup');const lockedHeading=truck.heading;
+player.y=3.4;for(let i=0;i<24;i++)tick(.04);assert.equal(truck.mode,'charge');assert.equal(truck.heading,lockedHeading,'Charge direction is locked');
+const beforeX=truck.x;for(let i=0;i<10;i++)tick(.04);assert.ok(beforeX-truck.x>2.5,'High speed charge');assert.equal(player.hp,100,'Sidestep avoids charge');
+loadLevel(2);running=true;player.x=2.5;player.y=2.5;enemies=[truckAt(5.5,2.5)];
+for(let i=0;i<40;i++)tick(.04);assert.equal(player.hp,72,'Exactly one ram hit');
+loadLevel(2);running=true;player.x=2.5;player.y=2.5;enemies=[truckAt(7.5,5.5)];truck=enemies[0];truck.mode='charge';truck.phase=.95;truck.heading=Math.PI;
+for(let i=0;i<10;i++)tick(.04);assert.equal(truck.mode,'recover');assert.equal(truck.hp,235);assert.ok(truck.x>=6.3,'No tunnelling through racks');
+loadLevel(2);running=true;kills=levelTotal-4;warehouseStory();assert.equal(storyHeard,false);kills++;warehouseStory();assert.equal(storyHeard,true);assert.ok($('#radio-message').innerHTML.includes('замуровали'));storyTimer=7;warehouseStory();assert.equal(storyTimer,7,'Story only plays once');pause();assert.equal($('#radio-message').hidden,true);
 console.log('PASS: wall orientation on all four faces, reachability, collisions, projectile hits, all weapons, splash, pickups, death, victory, restart, pause');
 `,sandbox);
