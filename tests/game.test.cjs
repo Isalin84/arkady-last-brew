@@ -7,7 +7,7 @@ const elements=new Map();
 const element=()=>({style:{},classList:{toggle(){}},addEventListener(){},getContext:()=>context,requestPointerLock:()=>Promise.resolve(),textContent:'',innerHTML:'',hidden:false});
 const document={querySelector(s){if(!elements.has(s))elements.set(s,element());return elements.get(s)},querySelectorAll:()=>[],createElement:element,addEventListener(){},exitPointerLock(){}};
 const sandbox={document,window:{addEventListener(){}},performance:{now:()=>0},requestAnimationFrame(){},matchMedia:()=>({matches:false}),GameAudio:new Proxy({resume:()=>Promise.resolve()},{get:(t,p)=>t[p]||(()=>{})}),console,assert};
-vm.createContext(sandbox);vm.runInContext(readFileSync('game.js','utf8'),sandbox);
+vm.createContext(sandbox);for(const file of ['levels.js','scene-art.js','game.js'])vm.runInContext(readFileSync(file,'utf8'),sandbox);
 vm.runInContext(`
 reset();
 // Real raycasting must read wall lettering left-to-right on all four faces.
@@ -38,7 +38,23 @@ reset();enemies=[{x:3.4,y:2.8,hp:70,max:70,type:0},{x:3.8,y:3.1,hp:70,max:70,typ
 // Health pickup and both terminal states.
 reset();running=true;player.hp=50;player.x=1.5;player.y=4.5;tick(.01);assert.equal(player.hp,85);
 finish(false);assert.equal(dead,true);start();assert.equal(player.hp,100);assert.equal(kills,0);assert.equal(running,true);
-kills=12;enemies=[];player.x=13.5;player.y=14.5;tick(.01);assert.equal(won,true);assert.equal(running,false);
+kills=12;enemies=[];player.x=13.5;player.y=14.5;tick(.01);assert.equal(transition,true);assert.equal(won,false);assert.equal(running,false);
+start();assert.equal(levelIndex,1);assert.equal(enemies.length,16);assert.ok(player.hp>=75);
+finish(false);start();assert.equal(levelIndex,1,'Death retries second level');assert.equal(kills,0);
+kills=levelTotal;enemies=[];player.x=18.2;player.y=16.5;tick(.01);assert.equal(won,true);assert.equal(transition,false);
 start();assert.equal(kills,0);assert.equal(enemies.length,12);pause();assert.equal(running,false);start();assert.equal(running,true);
+// Both layouts: traversable spawn, every enemy and pickup, exit; props block movement.
+for(let index=0;index<LEVELS.length;index++){
+ loadLevel(index);const startCell=[Math.floor(player.x),Math.floor(player.y)];const queue=[startCell],seen=new Set([startCell.join(',')]);
+ for(let k=0;k<queue.length;k++){const [x,y]=queue[k];for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy,key=nx+','+ny;if(!solid(nx+.5,ny+.5)&&!seen.has(key)){seen.add(key);queue.push([nx,ny]);}}}
+ for(const e of [...enemies,...items,{x:LEVELS[index].exit[0],y:LEVELS[index].exit[1]}])assert.ok(seen.has(Math.floor(e.x)+','+Math.floor(e.y)),'Unreachable in level '+index+': '+e.x+','+e.y);
+ for(const p of props)assert.ok(solid(p.x,p.y),'Equipment collision');
+ running=true;kills=0;player.x=LEVELS[index].exit[0];player.y=LEVELS[index].exit[1];tick(.01);assert.equal(running,true,'Exit stays locked until clear');
+ drawWorld();drawSprites();
+}
+loadLevel(1);running=true;player.hp=10000;
+enemies=[{x:6.5,y:5.5,type:3,hp:100,max:100,attack:0,hit:0,seed:0,alert:true}];
+for(let i=0;i<1000;i++)tick(.04);
+assert.ok(Math.hypot(enemies[0].x-player.x,enemies[0].y-player.y)<.85,'Awakened monster navigates around bottle conveyor');
 console.log('PASS: wall orientation on all four faces, reachability, collisions, projectile hits, all weapons, splash, pickups, death, victory, restart, pause');
 `,sandbox);

@@ -20,3 +20,11 @@ Generated at the user's request in their ElevenLabs account, using the existing 
 ## Background music
 
 `music/arkady-hunting.mp3` is derived from the user-provided `voice/Arkady Hunting.m4a` (228.32 s), supplied specifically as this game's background music. Original retained. Browser copy normalized to -18 LUFS / -2 dBTP, 44.1 kHz, 160 kbps MP3 with short edge fades. No external music source was substituted.
+
+## v0.5 — two production departments (2026-09-15)
+
+- `voice/16.mp3`–`29.mp3`: generated in the owner's signed-in ElevenLabs account with **Arkady Clone** (not Arkady), **Eleven Multilingual v2**, speed 1, stability 0.5, similarity 0.75, style 0, speaker boost on. 14 original Russian lines, separated by 1.5-second breaks. Take used 795 credits. Downloaded original retained in Downloads; split boundaries in `voice/segments-level2.json`. Dialogue normalized to −18 LUFS / −2 dBTP.
+- `sfx/monster-large.mp3`: DavidDumaisAudio, [Large Monster Attack](https://pixabay.com/sound-effects/film-special-effects-large-monster-attack-195713/), downloaded from Pixabay under its Content License. Used for pallet golems and large microbes.
+- `sfx/monster-small.mp3`: DavidDumaisAudio, [Small Monster Attack](https://pixabay.com/sound-effects/film-special-effects-small-monster-attack-195712/), downloaded from Pixabay under its Content License. Used for bottle creatures and small microbes.
+- `sfx/monster-can.mp3`: ElevenLabs Sound Effects, generated in the owner's account, 2 seconds, loop off, influence 49%, variation 1 (80 credits for the four variants). Prompt: “A single aggressive attack snarl from a possessed aluminum beer can monster. Wet guttural goblin growl layered with sharp crushed metal creaks and a short pressurized hiss. Punchy scary comic horror game creature, close dry recording, no speech, no music, clean short decay.”
+- All three creature samples normalized to −19 LUFS / −3 dBTP, with distance attenuation, stereo positioning, slight pitch variation and a shared rate limit in the game mixer. No separate external audio service is needed to play the game.

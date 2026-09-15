@@ -1,0 +1,77 @@
+{
+  "source": "ElevenLabs_2026-09-15T12_14_28_Arkady Clone_ivc_sp100_s50_sb75_se0_b_m2.mp3",
+  "voice": "Arkady Clone",
+  "model": "Eleven Multilingual v2",
+  "segments": [
+    {
+      "file": "16.mp3",
+      "sourceStart": 0,
+      "sourceEnd": 3.506
+    },
+    {
+      "file": "17.mp3",
+      "sourceStart": 4.817,
+      "sourceEnd": 9.685
+    },
+    {
+      "file": "18.mp3",
+      "sourceStart": 10.991,
+      "sourceEnd": 14.717
+    },
+    {
+      "file": "19.mp3",
+      "sourceStart": 16.018,
+      "sourceEnd": 19.784
+    },
+    {
+      "file": "20.mp3",
+      "sourceStart": 21.043,
+      "sourceEnd": 24.193
+    },
+    {
+      "file": "21.mp3",
+      "sourceStart": 25.4,
+      "sourceEnd": 27.044
+    },
+    {
+      "file": "22.mp3",
+      "sourceStart": 28.214,
+      "sourceEnd": 29.811
+    },
+    {
+      "file": "23.mp3",
+      "sourceStart": 31.036,
+      "sourceEnd": 32.843
+    },
+    {
+      "file": "24.mp3",
+      "sourceStart": 34.177,
+      "sourceEnd": 36.088
+    },
+    {
+      "file": "25.mp3",
+      "sourceStart": 37.253,
+      "sourceEnd": 40.225
+    },
+    {
+      "file": "26.mp3",
+      "sourceStart": 41.87,
+      "sourceEnd": 44.619
+    },
+    {
+      "file": "27.mp3",
+      "sourceStart": 46.195,
+      "sourceEnd": 48.391
+    },
+    {
+      "file": "28.mp3",
+      "sourceStart": 49.996,
+      "sourceEnd": 52.8
+    },
+    {
+      "file": "29.mp3",
+      "sourceStart": 54.391,
+      "sourceEnd": 59.376
+    }
+  ]
+}
