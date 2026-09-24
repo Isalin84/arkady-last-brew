@@ -21,21 +21,32 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: npm
+      - name: Install test browser
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
       - name: Check game
         run: |
           node --check game.js
           node --check audio.js
+          node --check audio-manifest.js
+          node --check score.js
+          node --check score-card.js
           node --check weapons-art.js
           node --check levels.js
           node --check scene-art.js
           node tests/game.test.cjs
           node tests/audio.test.cjs
+          node tests/score.test.cjs
+          npm run test:browser
       - name: Assemble website
         run: |
-          mkdir -p _site/assets/audio/voice _site/assets/audio/music _site/assets/audio/sfx
-          cp index.html style.css game.js audio.js weapons-art.js levels.js scene-art.js _site/
-          cp -R assets/art _site/assets/
-          cp assets/audio/voice/[0-9][0-9].mp3 _site/assets/audio/voice/
+          mkdir -p _site/assets/art/brand _site/assets/audio/voice _site/assets/audio/music _site/assets/audio/sfx
+          cp index.html style.css game.js audio-manifest.js audio.js score.js score-card.js weapons-art.js levels.js scene-art.js _site/
+          cp assets/art/*.webp _site/assets/art/
+          cp assets/art/brand/* _site/assets/art/brand/
+          find assets/audio/voice -name '[0-9][0-9].mp3' ! -name '14.mp3' ! -name '29.mp3' ! -name '43.mp3' -exec cp {} _site/assets/audio/voice/ \;
           cp assets/audio/music/*.mp3 _site/assets/audio/music/
           cp assets/audio/sfx/*.mp3 _site/assets/audio/sfx/
           cp assets/audio/SOURCES.md _site/assets/audio/

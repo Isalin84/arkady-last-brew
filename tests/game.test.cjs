@@ -4,19 +4,20 @@ const assert=require('node:assert/strict');
 const gradient={addColorStop(){}};
 const context=new Proxy({createLinearGradient:()=>gradient},{get:(t,p)=>t[p]||(()=>{})});
 const elements=new Map();
-const element=()=>({style:{},classList:{toggle(){}},addEventListener(){},getContext:()=>context,requestPointerLock:()=>Promise.resolve(),textContent:'',innerHTML:'',hidden:false});
+const element=()=>({style:{},classList:{toggle(){}},addEventListener(){},getContext:()=>context,requestPointerLock:()=>Promise.resolve(),removeAttribute(){},setAttribute(){},textContent:'',innerHTML:'',hidden:false});
 const document={querySelector(s){if(!elements.has(s))elements.set(s,element());return elements.get(s)},querySelectorAll:()=>[],createElement:element,addEventListener(){},exitPointerLock(){}};
-const audioEvents=[],audioMock={resume:()=>({then(fn){fn();return this}}),say:event=>{audioEvents.push(event);return true}};
-const sandbox={document,window:{addEventListener(){}},performance:{now:()=>0},requestAnimationFrame(){},matchMedia:()=>({matches:false}),GameAudio:new Proxy(audioMock,{get:(t,p)=>t[p]||(()=>{})}),console,assert,audioEvents};
-vm.createContext(sandbox);for(const file of ['levels.js','scene-art.js','game.js'])vm.runInContext(readFileSync(file,'utf8'),sandbox);
+const storage=new Map(),localStorage={getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,String(value))};
+const audioEvents=[],audioMock={resume:()=>({then(fn){fn();return this}}),say:event=>{audioEvents.push(event);return true},kiss:()=>audioEvents.push('kiss')};
+const sandbox={document,window:{addEventListener(){}},localStorage,performance:{now:()=>0},requestAnimationFrame(){},matchMedia:()=>({matches:false}),GameAudio:new Proxy(audioMock,{get:(t,p)=>t[p]||(()=>{})}),ScoreCard:{create:async()=>({url:'blob:score'}),download(){},copyLink:async()=>{},share:async()=>true},setTimeout(){},console,assert,audioEvents};
+vm.createContext(sandbox);for(const file of ['score.js','levels.js','scene-art.js','game.js'])vm.runInContext(readFileSync(file,'utf8'),sandbox);
 vm.runInContext(`
 reset();
-assert.equal($('#arkady-health-portrait').src,'assets/art/arkady-health-100.png');
-player.hp=75;updateHUD();assert.equal($('#arkady-health-portrait').src,'assets/art/arkady-health-75.png');
-player.hp=50;updateHUD();assert.equal($('#arkady-health-portrait').src,'assets/art/arkady-health-50.png');
-player.hp=25;updateHUD();assert.equal($('#arkady-health-portrait').src,'assets/art/arkady-health-50.png','Critical portrait starts below 25%');
-player.hp=24;updateHUD();assert.equal($('#arkady-health-portrait').src,'assets/art/arkady-health-25.png');
-player.hp=76;updateHUD();assert.equal($('#arkady-health-portrait').src,'assets/art/arkady-health-100.png');
+assert.equal($('#arkady-health-portrait').src,'assets/art/arkady-health-100.webp');
+player.hp=75;updateHUD();assert.equal($('#arkady-health-portrait').src,'assets/art/arkady-health-75.webp');
+player.hp=50;updateHUD();assert.equal($('#arkady-health-portrait').src,'assets/art/arkady-health-50.webp');
+player.hp=25;updateHUD();assert.equal($('#arkady-health-portrait').src,'assets/art/arkady-health-50.webp','Critical portrait starts below 25%');
+player.hp=24;updateHUD();assert.equal($('#arkady-health-portrait').src,'assets/art/arkady-health-25.webp');
+player.hp=76;updateHUD();assert.equal($('#arkady-health-portrait').src,'assets/art/arkady-health-100.webp');
 player.hp=100;updateHUD();
 // Real raycasting must read wall lettering left-to-right on all four faces.
 const originalDrawImage=ctx.drawImage;
@@ -38,6 +39,7 @@ let wallProbe={x:1.3,y:1.3};move(wallProbe,-.2,0);assert.equal(wallProbe.x,1.3,'
 // Throw bottles through the real projectile loop at the opening enemy.
 running=true;shoot();for(let i=0;i<20;i++)tick(.025);shoot();for(let i=0;i<22;i++)tick(.025);
 assert.equal(kills,1,'Two bottle hits kill the first enemy');assert.equal(weapons[0].ammo,Infinity);
+assert.ok(GameScore.current>0,'Kills add to the visible run score');
 reset();running=true;choose(1);shoot();assert.equal(weapons[1].ammo,17);assert.equal(shots[0].type,'can');
 reset();running=true;choose(2);shoot();assert.equal(weapons[2].ammo,119);
 reset();running=true;choose(3);shoot();assert.equal(weapons[3].ammo,79);assert.equal(shots.length,3);
@@ -59,7 +61,7 @@ finish(false);start();assert.equal(levelIndex,3,'Death retries malt house');asse
 kills=levelTotal;enemies=[];player.x=LEVELS[3].exit[0];player.y=LEVELS[3].exit[1];tick(.01);assert.equal(won,false,'Exit cannot bypass the silo rescue');
 interact();assert.equal(rescueStage,0,'Controls must be used in order and at close range');
 for(const [stage,type] of [[1,'aspiration'],[2,'screw'],[3,'hatch']]){const panel=props.find(p=>p.type===type);player.x=panel.x;player.y=panel.y;interact();assert.equal(rescueStage,stage);assert.equal(panel.active,true);}
-assert.equal(stellaVisible,true);assert.equal(won,false);player.x=LEVELS[3].stella[0];player.y=LEVELS[3].stella[1];tick(.01);assert.equal(won,false,'Stella remains visible until the player interacts');const beforeFinaleAudio=audioEvents.length;interact();assert.equal(won,true);assert.equal(transition,false);assert.ok($('#overlay').classList.toggle,'Finale overlay is available');assert.equal($('.cover-art').src,'assets/art/stella-kisses-arkady.png');assert.ok(audioEvents.length>beforeFinaleAudio,'Finale triggers voice and kiss audio');
+assert.equal(stellaVisible,true);assert.equal(won,false);player.x=LEVELS[3].stella[0];player.y=LEVELS[3].stella[1];tick(.01);assert.equal(won,false,'Stella remains visible until the player interacts');const beforeFinaleAudio=audioEvents.length;interact();assert.equal(won,true);assert.equal(transition,false);assert.ok($('#overlay').classList.toggle,'Finale overlay is available');assert.equal($('.cover-art').src,'assets/art/stella-kisses-arkady.webp');assert.ok(audioEvents.includes('kiss')&&audioEvents.length>beforeFinaleAudio,'Finale triggers voice and kiss audio');assert.equal(GameScore.records().length,1);assert.ok(Number($('#final-score').textContent)>0);assert.equal($('#score-panel').hidden,false);
 assert.ok($('.intro p').innerHTML.includes('Стеллу'));assert.ok($('.intro p').innerHTML.includes('Четыре цеха'));assert.equal(LEVELS.length,4);
 start();assert.equal(kills,0);assert.equal(enemies.length,12);pause();assert.equal(running,false);start();assert.equal(running,true);
 // Both layouts: traversable spawn, every enemy and pickup, exit; props block movement.

@@ -15,7 +15,7 @@ License reference: https://pixabay.com/service/license-summary/
 
 Generated at the user's request in their ElevenLabs account, using the existing **Arkady Clone** voice, **Eleven Multilingual v2**, speed 1, stability 0.5, similarity 0.75, style 0, speaker boost on. One generation, 688 credits (balance 90,000 → 89,312). User saved the resulting `voice/Arkady Voice.mp3` to this project.
 
-`voice/01.mp3`–`voice/15.mp3` are cuts of that take, normalized to -18 LUFS, -2 dBTP. Text and event assignments are in `audio.js`; exact source cut boundaries are in `voice/segments.json`. Reproduce the split with `python3 scripts/split-voice.py` (requires FFmpeg). No replacement or additional voice clone was created.
+`voice/01.mp3`–`voice/15.mp3` are cuts of that take, normalized to -18 LUFS, -2 dBTP. Text and event assignments are in `audio-manifest.js`; exact source cut boundaries are in `voice/segments.json`. Reproduce the split with `python3 scripts/split-voice.py` (requires FFmpeg). No replacement or additional voice clone was created.
 
 ## Background music
 
@@ -41,9 +41,14 @@ Generated at the user's request in their ElevenLabs account, using the existing 
 
 - `voice/44.mp3`–`58.mp3`: 15 original Russian lines generated in the owner's signed-in ElevenLabs account with **Arkady Clone**, **Eleven Multilingual v2**, speed 1, stability 0.5, similarity 0.75, style 0, speaker boost on. Source take: `ElevenLabs_2026-09-24T09_37_14_Arkady Clone_ivc_sp100_s50_sb75_se0_b_m2.mp3`.
 - `voice/59.mp3`–`60.mp3`: two Stella lines generated with the owner's Russian female My Voices entry displayed by ElevenLabs as **Essa** (the voice identified for Stella), using the same model and settings. Source take: `ElevenLabs_2026-09-24T09_38_54_Essa_gen_sp100_s50_sb75_se0_b_m2.mp3`.
-- All 17 new clips are normalized to −18 LUFS / −2 dBTP, 44.1 kHz, 128 kbps MP3. Exact split boundaries are in `voice/segments-level4.json`; event text and speaker names are in `voice/malthouse-script.json` and `audio.js`.
+- All 17 new clips are normalized to −18 LUFS / −2 dBTP, 44.1 kHz, 128 kbps MP3. Exact split boundaries are in `voice/segments-level4.json`; event text and speaker names are in `voice/malthouse-script.json` and `audio-manifest.js`.
 - The new malt creatures reuse the existing licensed creature attacks with distinct pitch, rate, distance and stereo treatment in the mixer; no additional third-party recording was added.
 
 ## v0.7.2 — finale kiss (2026-09-24)
 
 - `sfx/kiss.mp3`: **Kiss 242243** by Universfield, supplied by the user as `universfield-kiss-242243.mp3` for the Stella rescue finale. The game copy is normalized to −19 LUFS / −3 dBTP, 44.1 kHz, 128 kbps MP3 with short edge fades and follows the effects-volume control.
+
+## v0.8 — runtime manifest (2026-09-24)
+
+- `audio-manifest.js` binds every spoken line to its exact numbered MP3. Retired clips `14.mp3`, `29.mp3` and `43.mp3` remain in the source archive but are not loaded or published.
+- The browser loads only the current chapter's speech pack. A failed request is eligible for retry on the next resume instead of staying permanently silent.

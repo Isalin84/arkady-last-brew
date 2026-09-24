@@ -2,21 +2,21 @@
 const canvas=document.querySelector('#game'),ctx=canvas.getContext('2d',{alpha:false});
 const W=960,H=540,VIEW=470,FOV=Math.PI/3;
 const $=s=>document.querySelector(s);
-let map,props=[],levelIndex=0,levelTotal=12,transition=false,checkpoint=null,pathField=[],pathAt=-1,storyHeard=false,storyTimer=0,rescueStage=0,stellaVisible=false,stellaMet=false;
+let map,props=[],levelIndex=0,levelTotal=12,transition=false,checkpoint=null,pathField=[],pathAt=-1,storyHeard=false,storyTimer=0,rescueStage=0,stellaVisible=false,renderRequested=true;
 const weapons=[{name:'Смена №7 · IPA',ammo:Infinity,cool:.5,damage:42,speed:10,type:'bottle'},{name:'Котёл 13 · стаут',ammo:18,cool:.8,damage:95,speed:7,type:'can'},{name:'Пробкомёт',ammo:120,cool:.12,damage:19,speed:24,type:'cork'},{name:'Пенная пушка',ammo:80,cool:.09,damage:11,speed:8,type:'foam'}];
 let player,enemies,items,shots=[],particles=[],running=false,started=false,won=false,dead=false,kills=0,weapon=0,fire=false,showMap=false,clock=0,cooldown=0,kick=0,hurt=0,toastTime=0,audioEnabled=true,step=0;
 const keys=new Set(),depth=new Float32Array(W);
 function loadLevel(index,restore=false){
- GameAudio.reset();setFinaleCover(false);storyHeard=false;storyTimer=0;rescueStage=0;stellaVisible=false;stellaMet=false;$('#radio-message').hidden=true;pathAt=-1;pathField=[];levelIndex=index;const level=LEVELS[index];map=level.map.map(r=>r.split('').map(Number));
+ GameAudio.reset();setFinaleCover(false);storyHeard=false;storyTimer=0;rescueStage=0;stellaVisible=false;$('#radio-message').hidden=true;pathAt=-1;pathField=[];levelIndex=index;const level=LEVELS[index];map=level.map.map(r=>r.split('').map(Number));
  props=level.props.map(([x,y,type,size,r])=>({x,y,type,size,r,active:false}));
  const [x,y,a]=level.spawn;player={x,y,a,hp:restore&&checkpoint?checkpoint.hp:100};
  enemies=level.enemies.map(([x,y,type],i)=>({x,y,type,hp:ENEMY_TYPES[type].hp,max:ENEMY_TYPES[type].hp,attack:0,hit:0,seed:i*3.1,alert:false,mode:'hunt',phase:0,chargeCooldown:1.5,heading:Math.PI}));levelTotal=enemies.length;
  items=level.items.map(([x,y,type])=>({x,y,type}));shots=[];particles=[];kills=0;weapon=0;
  weapons.forEach((w,i)=>w.ammo=restore&&checkpoint?checkpoint.ammo[i]:[Infinity,18,120,80][i]);
  cooldown=0;kick=0;hurt=0;dead=false;won=false;transition=false;clock=0;fire=false;keys.clear();
- GameAudio.setLevel?.(index);$('#level-name').textContent=level.name;updateHUD();
+ GameAudio.setLevel?.(index);$('#level-name').textContent=level.name;renderRequested=true;updateHUD();
 }
-function reset(){checkpoint=null;loadLevel(0);}
+function reset(){checkpoint=null;GameScore.begin();loadLevel(0);GameScore.checkpoint();}
 function solid(x,y){return map[Math.floor(y)]?.[Math.floor(x)]!==0||props.some(p=>Math.hypot(x-p.x,y-p.y)<p.r);}
 function move(o,dx,dy,r=.22){if(!solid(o.x+dx+Math.sign(dx)*r,o.y-r)&&!solid(o.x+dx+Math.sign(dx)*r,o.y+r))o.x+=dx;if(!solid(o.x-r,o.y+dy+Math.sign(dy)*r)&&!solid(o.x+r,o.y+dy+Math.sign(dy)*r))o.y+=dy;}
 function sight(x,y,tx,ty){let d=Math.hypot(tx-x,ty-y),n=Math.ceil(d/.15);for(let i=1;i<n;i++)if(solid(x+(tx-x)*i/n,y+(ty-y)*i/n))return false;return true;}
@@ -25,40 +25,46 @@ function updateHUD(){
  const health=Math.max(0,Math.min(100,Math.ceil(player.hp))),portrait=$('#arkady-health-portrait');
  const state=health>=76?'100':health>=51?'75':health>=25?'50':'25';
  const labels={100:'Аркадий здоров',75:'Аркадий получил лёгкие повреждения',50:'Аркадий сильно пострадал',25:'Аркадий критически ранен'};
- $('#health').textContent=health;$('#healthbar').style.width=health+'%';portrait.src='assets/art/arkady-health-'+state+'.png';portrait.alt=labels[state];
- $('#weaponname').textContent=weapons[weapon].name;$('#ammo').textContent=weapons[weapon].ammo===Infinity?'∞':weapons[weapon].ammo;$('#kills').innerHTML=kills+' <em>/ '+levelTotal+'</em>';document.querySelectorAll('.weapon').forEach((b,i)=>b.classList.toggle('active',i===weapon));
+ $('#health').textContent=health;$('#healthbar').style.width=health+'%';portrait.src='assets/art/arkady-health-'+state+'.webp';portrait.alt=labels[state];
+ $('#weaponname').textContent=weapons[weapon].name;$('#ammo').textContent=weapons[weapon].ammo===Infinity?'∞':weapons[weapon].ammo;$('#kills').innerHTML=kills+' <em>/ '+levelTotal+'</em>';$('#score').textContent=Math.round(GameScore.current);document.querySelectorAll('.weapon').forEach((b,i)=>b.classList.toggle('active',i===weapon));
 }
 function choose(i){weapon=i;kick=.18;updateHUD();if(running)toast(weapons[i].name);}
 function start(){
  const fresh=!started||dead||won||transition;let event='start';
- if(transition){const completedLevel=levelIndex,nextLevel=completedLevel+1,minimum=[[0,22,140,100],[0,32,190,140],[0,38,220,165]][completedLevel]||[0,22,140,100];checkpoint={hp:Math.max(75,player.hp),ammo:weapons.map((w,i)=>i===0?Infinity:Math.max(w.ammo,minimum[i]))};loadLevel(nextLevel,true);event=['start','packstart','warestart','maltstart'][nextLevel]||'start';}
- else if(dead){loadLevel(levelIndex,true);event=['start','packstart','warestart','maltstart'][levelIndex];}
+ if(transition){const completedLevel=levelIndex,nextLevel=completedLevel+1,minimum=[[0,22,140,100],[0,32,190,140],[0,38,220,165]][completedLevel]||[0,22,140,100];checkpoint={hp:Math.max(75,player.hp),ammo:weapons.map((w,i)=>i===0?Infinity:Math.max(w.ammo,minimum[i]))};loadLevel(nextLevel,true);GameScore.checkpoint();event=LEVELS[nextLevel].dialogue.start;}
+ else if(dead){GameScore.retryLevel();loadLevel(levelIndex,true);event=LEVELS[levelIndex].dialogue.start;}
  else if(!started||won)reset();
- started=true;running=true;$('#overlay').hidden=true;$('#hud').hidden=false;$('#crosshair').style.display='block';$('#status').textContent=levelIndex===3?'Зачисти солодовню и найди аварийные системы силоса':levelIndex===2?'Маячок мигает? Уходи с линии тарана!':'Очисти цех и доберись до выхода';
+ started=true;running=true;renderRequested=true;$('#overlay').hidden=true;$('#hud').hidden=false;$('#crosshair').style.display='block';$('#status').textContent=LEVELS[levelIndex].status;updateHUD();
  canvas.requestPointerLock?.()?.catch(()=>{});toast(LEVELS[levelIndex].name+' · '+levelTotal+' монстров');
  GameAudio.resume().then(()=>{if(running&&fresh)GameAudio.say(event,true);});
 }
-function pause(){if(!running)return;$('#radio-message').hidden=true;GameAudio.pause();running=false;fire=false;keys.clear();$('#overlay').hidden=false;$('.intro h1').innerHTML='ПЕРЕРЫВ<br><span>НА ПЕНУ</span>';$('.intro p').innerHTML='Смена ещё не закончена.<br>Цех ждёт своего пивовара.';$('#start').innerHTML='Продолжить смену <span>↗</span>';document.exitPointerLock?.();}
+function pause(){if(!running)return;$('#radio-message').hidden=true;GameAudio.pause();running=false;renderRequested=true;fire=false;keys.clear();$('#overlay').hidden=false;$('.intro h1').innerHTML='ПЕРЕРЫВ<br><span>НА ПЕНУ</span>';$('.intro p').innerHTML='Смена ещё не закончена.<br>Цех ждёт своего пивовара.';$('#start').innerHTML='Продолжить смену <span>↗</span>';document.exitPointerLock?.();}
 function finish(win){
  GameAudio.pause();transition=win&&levelIndex<LEVELS.length-1;
- GameAudio.say(win?(transition?['transition','waretransition','malttransition'][levelIndex]:'stellathanks'):'death',true);
- running=false;won=win&&!transition;dead=!win;fire=false;keys.clear();document.exitPointerLock?.();setFinaleCover(won);if(won)GameAudio.kiss?.();$('#overlay').hidden=false;$('#radio-message').hidden=true;
- const next=['РОЗЛИВ','СКЛАД','СОЛОДОВНЯ'][levelIndex];
- $('.intro h1').innerHTML=transition?'ДАЛЬШЕ —<br><span>'+next+'</span>':win?'СТЕЛЛА<br><span>СПАСЕНА</span>':'СМЕНА<br><span>ПРОПАЛА</span>';
- const transitions=['Варочный цех очищен. Но тара ожила!<br>Впереди линии банок и бутылок.','Розлив спасён. На складе взбесилась техника!<br>Мигающий маячок — предупреждение о таране.<br>Увернись: удар о стеллаж оглушит погрузчик.','Склад очищен. Сигнал ведёт в солодовню.<br>Кто-то заперт в силосе № 4. Пора открыть аварийный люк.'];
- $('.intro p').innerHTML=transition?transitions[levelIndex]+'<br>Припасы пополнены, здоровье — не ниже 75.':win?'Аспирация работает, шнек остановлен, аварийный люк открыт.<br>Аркадий вывел Стеллу из силоса. Солодовня снова под контролем.<br><b>Четыре цеха очищены. Ночная смена завершена.</b>':`Уничтожено: ${kills} из ${levelTotal}.<br>Попробуй ещё раз с начала этого цеха.`;
- const transitionButtons=['В цех упаковки','На склад','В солодовню'];
- $('#start').innerHTML=(transition?transitionButtons[levelIndex]:win?'Пройти четыре главы заново':'Повторить цех')+' <span>↗</span>';
+ GameAudio.say(win?(transition?LEVELS[levelIndex].dialogue.transition:'stellathanks'):'death',true);
+ running=false;won=win&&!transition;dead=!win;renderRequested=true;fire=false;keys.clear();document.exitPointerLock?.();setFinaleCover(won);if(won)GameAudio.kiss?.();$('#overlay').hidden=false;$('#radio-message').hidden=true;
+ const next=LEVELS[levelIndex].next;
+ $('.intro h1').innerHTML=transition?'ДАЛЬШЕ —<br><span>'+next.title+'</span>':win?'СТЕЛЛА<br><span>СПАСЕНА</span>':'СМЕНА<br><span>ПРОПАЛА</span>';
+ $('.intro p').innerHTML=transition?next.text+'<br>Припасы пополнены, здоровье — не ниже 75.':win?'Аспирация работает, шнек остановлен, аварийный люк открыт.<br>Аркадий вывел Стеллу из силоса. Солодовня снова под контролем.<br><b>Четыре цеха очищены. Ночная смена завершена.</b>':`Уничтожено: ${kills} из ${levelTotal}.<br>Попробуй ещё раз с начала этого цеха.`;
+ $('#start').innerHTML=(transition?next.button:win?'Попробовать набрать больше':'Повторить цех')+' <span>↗</span>';
  $('#status').textContent=transition?`Уровень ${levelIndex+1} из ${LEVELS.length} пройден`:win?'Глава 04 завершена · Стелла спасена':'Смена прервана';
+ if(won)showFinalScore(GameScore.finish(player.hp));
 }
 function setFinaleCover(finale){
  const overlay=$('#overlay'),art=$('.cover-art');overlay.classList.toggle('finale',finale);
- art.src=finale?'assets/art/stella-kisses-arkady.png':'assets/art/arkady-cover.png';
+ art.src=finale?'assets/art/stella-kisses-arkady.webp':'assets/art/arkady-cover.webp';
  art.alt=finale?'Стелла целует спасшего её Аркадия в щёку в солодовне':'Аркадий со скрещёнными руками на фоне пивоварни';
+ if(!finale)$('#score-panel').hidden=true;
 }
-function shoot(){let w=weapons[weapon];if(cooldown>0)return;if(w.ammo<=0){toast('Припасы закончились. Найди ящик или возьми бутылку: 1');cooldown=.4;return;}w.ammo--;cooldown=w.cool;kick=1;let count=weapon===3?3:1;for(let i=0;i<count;i++){let a=player.a+(i-(count-1)/2)*.1;shots.push({x:player.x+Math.cos(a)*.25,y:player.y+Math.sin(a)*.25,dx:Math.cos(a)*w.speed,dy:Math.sin(a)*w.speed,type:w.type,damage:w.damage,life:weapon===3?.65:2.5,age:0});}GameAudio.shot(w.type);GameAudio.say(['shoot','packshoot','wareshoot','maltshoot'][levelIndex]);updateHUD();}
+async function showFinalScore(result){
+ $('#score-panel').hidden=false;$('#final-score').textContent=result.score;$('#score-breakdown').textContent=`Зачистка +${result.clearBonus} · здоровье +${result.healthBonus} · скорость +${result.timeBonus}`;
+ $('#score-records').innerHTML=result.records.map((record,index)=>`<tr class="${record.id===result.id?'current':''}"><td>${index+1}</td><td>${record.score}</td><td>${GameScore.formatTime(record.time)}</td><td>${record.health}%</td></tr>`).join('');
+ $('#score-card-preview').removeAttribute('src');$('#score-card-preview').alt='Создаётся карточка результата';
+ try{const card=await ScoreCard.create(result);$('#score-card-preview').src=card.url;$('#score-card-preview').alt=`Карточка результата: ${result.score} очков`;}catch(err){console.warn('Score card unavailable:',err.message);}
+}
+function shoot(){let w=weapons[weapon];if(cooldown>0)return;if(w.ammo<=0){toast('Припасы закончились. Найди ящик или возьми бутылку: 1');cooldown=.4;return;}w.ammo--;GameScore.shot();cooldown=w.cool;kick=1;let count=weapon===3?3:1;for(let i=0;i<count;i++){let a=player.a+(i-(count-1)/2)*.1;shots.push({x:player.x+Math.cos(a)*.25,y:player.y+Math.sin(a)*.25,dx:Math.cos(a)*w.speed,dy:Math.sin(a)*w.speed,type:w.type,damage:w.damage,life:weapon===3?.65:2.5,age:0});}GameAudio.shot(w.type);GameAudio.say(LEVELS[levelIndex].dialogue.shoot);updateHUD();}
 function burst(x,y,color,n=14){for(let i=0;i<n;i++){let a=Math.random()*Math.PI*2,s=Math.random()*1.8;particles.push({x,y,dx:Math.cos(a)*s,dy:Math.sin(a)*s,z:Math.random()*.6,color,life:.35+Math.random()*.3});}}
-function damage(e,d){if(e.hp<=0)return;e.hp-=d;e.hit=.16;if(e.hp<=0){kills++;burst(e.x,e.y,ENEMY_TYPES[e.type].color,25);GameAudio.kill();GameAudio.say(e.type>=8?'maltkill':e.type>=6?'warekill':e.type===5?'golemkill':e.type===3?'packkill':'kill');if(kills===levelTotal)toast(levelIndex===3?'Солодовня очищена! Включи аспирацию — E':'Цех очищен! Выход — в дальнем правом углу. Смотри карту: M');updateHUD();}}
+function damage(e,d){if(e.hp<=0)return;e.hp-=d;e.hit=.16;if(e.hp<=0){kills++;GameScore.kill(e.type,e.max);burst(e.x,e.y,ENEMY_TYPES[e.type].color,25);GameAudio.kill();GameAudio.say(e.type===5?'golemkill':LEVELS[levelIndex].dialogue.kill);if(kills===levelTotal)toast(LEVELS[levelIndex].clear);updateHUD();}}
 function impact(s){const dx=s.x-player.x,dy=s.y-player.y;GameAudio.impact(s.type,Math.hypot(dx,dy),(-dx*Math.sin(player.a)+dy*Math.cos(player.a))/5);burst(s.x,s.y,s.type==='foam'?'#fff1c0':s.type==='can'?'#e5bc64':'#a0bb70',s.type==='can'?35:10);if(s.type==='can'){enemies.forEach(e=>{let d=Math.hypot(e.x-s.x,e.y-s.y);if(d<2.1&&sight(s.x,s.y,e.x,e.y))damage(e,s.damage*(1-d/2.5));});}}
 // A shared flow field lets awakened creatures navigate around production equipment.
 function routeField(){
@@ -75,7 +81,7 @@ function chase(e,dt,d,visible){
  move(e,(tx-e.x)/distance*speed,(ty-e.y)/distance*speed,.23);
 }
 function hurtPlayer(amount){
- player.hp=Math.max(0,player.hp-amount);hurt=1;GameAudio.hit();GameAudio.say(player.hp<30?'low':levelIndex===3?'malthurt':'warehurt');updateHUD();
+ const before=player.hp;player.hp=Math.max(0,player.hp-amount);GameScore.hurt(before-player.hp);hurt=1;GameAudio.hit();GameAudio.say(player.hp<30?'low':LEVELS[levelIndex].dialogue.hurt);updateHUD();
  if(player.hp<=0)finish(false);
 }
 function forklift(e,dt,d,visible){
@@ -116,7 +122,7 @@ const rescueSteps=[
 ];
 function interact(){
  if(!running||levelIndex!==3)return;
- if(stellaVisible){const [sx,sy]=LEVELS[3].stella;if(Math.hypot(player.x-sx,player.y-sy)<1.35){stellaMet=true;finish(true);}else toast('Стелла у открытого люка. Подойди к ней.');return;}
+ if(stellaVisible){const [sx,sy]=LEVELS[3].stella;if(Math.hypot(player.x-sx,player.y-sy)<1.35)finish(true);else toast('Стелла у открытого люка. Подойди к ней.');return;}
  if(kills<levelTotal){toast('Сначала очисти солодовню: '+kills+' / '+levelTotal);return;}
  const stepInfo=rescueSteps[rescueStage];if(!stepInfo)return;
  const panel=props.find(p=>p.type===stepInfo.type);
@@ -127,14 +133,14 @@ function interact(){
  if(rescueStage===3){stellaVisible=true;$('#status').textContent='Стелла освобождена. Подойди к ней и нажми E.';toast('ЛЮК ОТКРЫТ · НАЙДИ СТЕЛЛУ И НАЖМИ E');}
  else{$('#status').textContent=rescueSteps[rescueStage].hint+' · E';toast(rescueSteps[rescueStage].hint+' · E');}
 }
-function tick(dt){clock+=dt;cooldown=Math.max(0,cooldown-dt);kick=Math.max(0,kick-dt*4);hurt=Math.max(0,hurt-dt*2);toastTime-=dt;if(toastTime<=0)$('#toast').style.opacity=0;$('#radio-message').hidden=!running||storyTimer<=0;if(!running)return;storyTimer=Math.max(0,storyTimer-dt);
+function tick(dt){clock+=dt;cooldown=Math.max(0,cooldown-dt);kick=Math.max(0,kick-dt*4);hurt=Math.max(0,hurt-dt*2);toastTime-=dt;if(toastTime<=0)$('#toast').style.opacity=0;$('#radio-message').hidden=!running||storyTimer<=0;if(!running)return;GameScore.tick(dt);storyTimer=Math.max(0,storyTimer-dt);
 if(keys.has('ArrowLeft'))player.a-=dt*2;if(keys.has('ArrowRight'))player.a+=dt*2;
 let f=Number(keys.has('KeyW')||keys.has('ArrowUp'))-Number(keys.has('KeyS')||keys.has('ArrowDown')),s=Number(keys.has('KeyD'))-Number(keys.has('KeyA'));let len=Math.hypot(f,s)||1,speed=(keys.has('ShiftLeft')?3.8:2.6)*dt;move(player,(Math.cos(player.a)*f-Math.sin(player.a)*s)/len*speed,(Math.sin(player.a)*f+Math.cos(player.a)*s)/len*speed);if(f||s)step+=dt*9;GameAudio.update(dt,Boolean(f||s),keys.has('ShiftLeft'));
 if(fire||keys.has('Space'))shoot();if(clock>pathAt){routeField();pathAt=clock+.4;}
-for(let e of enemies){if(e.hp<=0)continue;e.hit=Math.max(0,e.hit-dt);e.attack-=dt;let d=Math.hypot(e.x-player.x,e.y-player.y),visible=sight(e.x,e.y,player.x,player.y);if((d<8&&visible)||e.alert){if(!e.alert){e.alert=true;toast(ENEMY_TYPES[e.type].name+'!');if(e.type<6||e.type>=8)GameAudio.monster?.(e.type,d,(-Math.sin(player.a)*(e.x-player.x)+Math.cos(player.a)*(e.y-player.y))/5);}if(e.type===6||e.type===7){forklift(e,dt,d,visible);if(!running)return;continue;}if(d>.72||!visible){chase(e,dt,d,visible);}else if(e.attack<=0){player.hp=Math.max(0,player.hp-ENEMY_TYPES[e.type].damage);hurt=1;e.attack=e.type===5||e.type===10?1.4:.85;GameAudio.monster?.(e.type,d,0,true);GameAudio.hit();GameAudio.say(player.hp<30?'low':['hurt','packhurt','warehurt','malthurt'][levelIndex]);updateHUD();if(player.hp<=0){finish(false);return;}}}}
+for(let e of enemies){if(e.hp<=0)continue;e.hit=Math.max(0,e.hit-dt);e.attack-=dt;let d=Math.hypot(e.x-player.x,e.y-player.y),visible=sight(e.x,e.y,player.x,player.y);if((d<8&&visible)||e.alert){if(!e.alert){e.alert=true;toast(ENEMY_TYPES[e.type].name+'!');if(e.type<6||e.type>=8)GameAudio.monster?.(e.type,d,(-Math.sin(player.a)*(e.x-player.x)+Math.cos(player.a)*(e.y-player.y))/5);}if(e.type===6||e.type===7){forklift(e,dt,d,visible);if(!running)return;continue;}if(d>.72||!visible){chase(e,dt,d,visible);}else if(e.attack<=0){e.attack=e.type===5||e.type===10?1.4:.85;GameAudio.monster?.(e.type,d,0,true);hurtPlayer(ENEMY_TYPES[e.type].damage);if(!running)return;}}}
 for(let sh of shots){sh.life-=dt;sh.age+=dt;let n=Math.ceil(Math.hypot(sh.dx,sh.dy)*dt/.1);for(let j=0;j<n&&sh.life>0;j++){sh.x+=sh.dx*dt/n;sh.y+=sh.dy*dt/n;if(solid(sh.x,sh.y)){sh.x-=sh.dx*dt/n;sh.y-=sh.dy*dt/n;impact(sh);sh.life=0;break;}let target=enemies.find(e=>e.hp>0&&Math.hypot(e.x-sh.x,e.y-sh.y)<((e.type===6||e.type===7||e.type===10)?.48:.34));if(target){if(sh.type!=='can')damage(target,sh.damage);impact(sh);sh.life=0;}}if(sh.life<=0&&sh.type==='can'&&sh.age>=2.5)impact(sh);}
 shots=shots.filter(s=>s.life>0);particles.forEach(p=>{p.life-=dt;p.x+=p.dx*dt;p.y+=p.dy*dt;p.z-=dt*.4;});particles=particles.filter(p=>p.life>0);
-items=items.filter(i=>{if(Math.hypot(i.x-player.x,i.y-player.y)<.65){if(i.type==='health'){if(player.hp>=100)return true;player.hp=Math.min(100,player.hp+35);toast('Перерыв на воду: +35 здоровья');}else{weapons[1].ammo+=8;weapons[2].ammo+=45;weapons[3].ammo+=35;toast('Ящик припасов: банки, пробки и пена');}GameAudio.say('pickup');updateHUD();return false;}return true;});
+items=items.filter(i=>{if(Math.hypot(i.x-player.x,i.y-player.y)<.65){if(i.type==='health'){if(player.hp>=100)return true;player.hp=Math.min(100,player.hp+35);toast('Перерыв на воду: +35 здоровья');}else{weapons[1].ammo+=8;weapons[2].ammo+=45;weapons[3].ammo+=35;toast('Ящик припасов: банки, пробки и пена');}GameScore.pickup();GameAudio.say('pickup');updateHUD();return false;}return true;});
 warehouseStory();
 if(levelIndex!==3&&kills===levelTotal&&Math.hypot(player.x-LEVELS[levelIndex].exit[0],player.y-LEVELS[levelIndex].exit[1])<.85)finish(true);
 }
@@ -168,7 +174,7 @@ function sprite(type){let c=document.createElement('canvas');c.width=c.height=12
 const sprites=Object.fromEntries(['enemy0','enemy1','enemy2','health','ammo','bottle','can','cork','foam'].map(s=>[s,sprite(s)]));
 const stellaSprite=document.createElement('canvas');stellaSprite.width=stellaSprite.height=128;const stellaImage=document.createElement('img');
 stellaImage.onload=()=>{const g=stellaSprite.getContext('2d');g.clearRect(0,0,128,128);g.imageSmoothingEnabled=true;const scale=Math.min(112/stellaImage.naturalWidth,124/stellaImage.naturalHeight),w=stellaImage.naturalWidth*scale,h=stellaImage.naturalHeight*scale;g.drawImage(stellaImage,64-w/2,126-h,w,h);};
-stellaImage.src='assets/art/stella-rescued-full.png';
+stellaImage.src='assets/art/stella-rescued-full.webp';
 function background(){ctx.fillStyle='#263629';ctx.fillRect(0,0,W,H);let sky=ctx.createLinearGradient(0,0,0,VIEW/2);sky.addColorStop(0,LEVELS[levelIndex].ceiling);sky.addColorStop(1,levelIndex===3?'#9b8a6b':levelIndex===2?'#61685f':levelIndex?'#72909b':'#68745e');ctx.fillStyle=sky;ctx.fillRect(0,0,W,VIEW/2);let floor=ctx.createLinearGradient(0,VIEW/2,0,VIEW);floor.addColorStop(0,LEVELS[levelIndex].floor);floor.addColorStop(1,levelIndex===3?'#403729':'#302f24');ctx.fillStyle=floor;ctx.fillRect(0,VIEW/2,W,H);for(let y=VIEW/2+5;y<VIEW;y+=3){let d=VIEW/(2*(y-VIEW/2));let alpha=Math.min(.17,.8/d);ctx.fillStyle=`rgba(195,171,109,${alpha})`;if(Math.floor(d+player.y)%2===0)ctx.fillRect(0,y,W,1);} }
 function floorDetails(){
  const ca=Math.cos(player.a),sa=Math.sin(player.a),plane=Math.tan(FOV/2);
@@ -200,7 +206,11 @@ function render(){ctx.imageSmoothingEnabled=false;drawWorld();drawSprites();if(s
 document.querySelectorAll('[data-volume]').forEach(input=>{const channel=input.dataset.volume;input.value=Math.round(GameAudio.volumes[channel]*100);$('#value-'+channel).textContent=input.value+'%';input.addEventListener('input',()=>{GameAudio.setVolume(channel,Number(input.value)/100);$('#value-'+channel).textContent=input.value+'%';});});
 $('#audio-settings').addEventListener('toggle',()=>{if($('#audio-settings').open&&running)pause();});
 $('#start').addEventListener('click',start);$('#sound').addEventListener('click',()=>{audioEnabled=!audioEnabled;GameAudio.setEnabled(audioEnabled);$('#sound').setAttribute('aria-label',audioEnabled?'Выключить звук':'Включить звук');$('#sound').textContent='Звук: '+(audioEnabled?'вкл.':'выкл.');});document.querySelectorAll('.weapon').forEach(b=>b.addEventListener('click',()=>choose(+b.dataset.weapon)));
+function scoreButtonFeedback(button,text){const old=button.textContent;button.textContent=text;setTimeout(()=>button.textContent=old,1800);}
+$('#download-score').addEventListener('click',()=>{ScoreCard.download();scoreButtonFeedback($('#download-score'),'Картинка скачана');});
+$('#copy-game-link').addEventListener('click',async()=>{try{await ScoreCard.copyLink();scoreButtonFeedback($('#copy-game-link'),'Ссылка скопирована');}catch{scoreButtonFeedback($('#copy-game-link'),'Не удалось скопировать');}});
+$('#share-score').addEventListener('click',async()=>{try{if(await ScoreCard.share())scoreButtonFeedback($('#share-score'),'Отправлено');else{ScoreCard.download();await ScoreCard.copyLink();scoreButtonFeedback($('#share-score'),'Скачано + ссылка');}}catch(err){if(err?.name!=='AbortError')scoreButtonFeedback($('#share-score'),'Не удалось отправить');}});
 window.addEventListener('keydown',e=>{if(e.target?.matches?.('input,textarea,select'))return;if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(e.code==='Escape'){pause();return;}if(e.code==='KeyM'&&!e.repeat)showMap=!showMap;if(e.code==='KeyE'&&!e.repeat)interact();if(['Digit1','Digit2','Digit3','Digit4'].includes(e.code))choose(Number(e.code.slice(-1))-1);if(running){keys.add(e.code);if(e.code==='Space'&&!e.repeat)shoot();}});window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',pause);document.addEventListener('visibilitychange',()=>{if(document.hidden){pause();GameAudio.pause();}});document.addEventListener('pointerlockchange',()=>{if(!document.pointerLockElement&&running&&matchMedia('(pointer:fine)').matches)pause();});document.addEventListener('mousemove',e=>{if(running&&document.pointerLockElement===canvas)player.a+=e.movementX*.0025;});canvas.addEventListener('mousedown',e=>{if(e.button!==0||!running)return;fire=true;shoot();if(document.pointerLockElement!==canvas)canvas.requestPointerLock?.()?.catch(()=>{});});window.addEventListener('mouseup',()=>fire=false);canvas.addEventListener('contextmenu',e=>e.preventDefault());canvas.addEventListener('wheel',e=>{if(running){e.preventDefault();choose((weapon+(e.deltaY>0?1:3))%4);}},{passive:false});
 for(let b of document.querySelectorAll('[data-key]')){b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);keys.add(b.dataset.key);});for(let name of ['pointerup','pointercancel'])b.addEventListener(name,()=>keys.delete(b.dataset.key));}$('#touchfire').addEventListener('pointerdown',e=>{e.preventDefault();e.target.setPointerCapture(e.pointerId);fire=true;});for(let name of ['pointerup','pointercancel'])$('#touchfire').addEventListener(name,()=>fire=false);$('#touchswap').addEventListener('click',()=>choose((weapon+1)%4));$('#touchuse').addEventListener('click',interact);let touchX=null;canvas.style.touchAction='none';canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')touchX=e.clientX;});canvas.addEventListener('pointermove',e=>{if(e.pointerType==='touch'&&touchX!==null&&running){player.a+=(e.clientX-touchX)*.009;touchX=e.clientX;}});canvas.addEventListener('pointerup',()=>touchX=null);
 document.querySelectorAll('.weapon-thumb').forEach((c,i)=>{c.getContext('2d').drawImage(WeaponArt.get(i),110,80,530,550,0,0,c.width,c.height);});
-reset();let previous=performance.now();function frame(now){let dt=Math.min(.04,(now-previous)/1000);previous=now;tick(dt);render();requestAnimationFrame(frame);}requestAnimationFrame(frame);
+reset();let previous=performance.now();function frame(now){let dt=Math.min(.04,(now-previous)/1000);previous=now;tick(dt);if(running||renderRequested){render();renderRequested=false;}requestAnimationFrame(frame);}requestAnimationFrame(frame);

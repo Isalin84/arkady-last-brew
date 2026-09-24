@@ -2,5 +2,12 @@
 _site/
 assets/audio/voice/Arkady Voice.mp3
 assets/audio/voice/Arkady Hunting.m4a
+assets/audio/universfield-*.mp3
+assets/art/arkady-character-photo-card-*.png
+assets/stella.png
+assets/source-private/
 
 .playwright-mcp/
+node_modules/
+test-results/
+playwright-report/
