@@ -1,7 +1,7 @@
 'use strict';
 // One mixer for positional effects, ambience and Arkady's voice. No overlapping dialogue.
 const GameAudio=(()=>{
- const files={glass:'sfx/glass.mp3',can:'sfx/can-open.mp3',steps:'sfx/footsteps.mp3',steam:'sfx/steam.mp3',music:'music/arkady-hunting.mp3',monsterLarge:'sfx/monster-large.mp3',monsterSmall:'sfx/monster-small.mp3',monsterCan:'sfx/monster-can.mp3',forklift:'sfx/forklift-engine.mp3',forkliftBeep:'sfx/forklift-beep.mp3',forkliftCrash:'sfx/forklift-crash.mp3'};
+ const files={glass:'sfx/glass.mp3',can:'sfx/can-open.mp3',steps:'sfx/footsteps.mp3',steam:'sfx/steam.mp3',music:'music/arkady-hunting.mp3',monsterLarge:'sfx/monster-large.mp3',monsterSmall:'sfx/monster-small.mp3',monsterCan:'sfx/monster-can.mp3',forklift:'sfx/forklift-engine.mp3',forkliftBeep:'sfx/forklift-beep.mp3',forkliftCrash:'sfx/forklift-crash.mp3',kiss:'sfx/kiss.mp3'};
  const lines=[
   ['start','Ну что, Аркадий. Ещё одна ночная смена.'],
   ['walk','Тридцать лет варю. Такого брожения ещё не видел.'],
@@ -106,5 +106,6 @@ const GameAudio=(()=>{
  }
  function hit(){sample('steps',{volume:.5,offset:.28,duration:.18,rate:.55});}
  function kill(){sample('can',{volume:.22,rate:.5,offset:.3,duration:.35});}
- return{resume,pause,reset,setLevel,monster,vehicle,setEnabled,setVolume,get volumes(){return {...levels};},say,shot,impact,update,hit,kill,lines,get enabled(){return enabled;},get loaded(){return Object.keys(buffers);}};
+ function kiss(){sample('kiss',{volume:.9});}
+ return{resume,pause,reset,setLevel,monster,vehicle,setEnabled,setVolume,get volumes(){return {...levels};},say,shot,impact,update,hit,kill,kiss,lines,get enabled(){return enabled;},get loaded(){return Object.keys(buffers);}};
 })();

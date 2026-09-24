@@ -43,3 +43,7 @@ Generated at the user's request in their ElevenLabs account, using the existing 
 - `voice/59.mp3`–`60.mp3`: two Stella lines generated with the owner's Russian female My Voices entry displayed by ElevenLabs as **Essa** (the voice identified for Stella), using the same model and settings. Source take: `ElevenLabs_2026-09-24T09_38_54_Essa_gen_sp100_s50_sb75_se0_b_m2.mp3`.
 - All 17 new clips are normalized to −18 LUFS / −2 dBTP, 44.1 kHz, 128 kbps MP3. Exact split boundaries are in `voice/segments-level4.json`; event text and speaker names are in `voice/malthouse-script.json` and `audio.js`.
 - The new malt creatures reuse the existing licensed creature attacks with distinct pitch, rate, distance and stereo treatment in the mixer; no additional third-party recording was added.
+
+## v0.7.2 — finale kiss (2026-09-24)
+
+- `sfx/kiss.mp3`: **Kiss 242243** by Universfield, supplied by the user as `universfield-kiss-242243.mp3` for the Stella rescue finale. The game copy is normalized to −19 LUFS / −3 dBTP, 44.1 kHz, 128 kbps MP3 with short edge fades and follows the effects-volume control.

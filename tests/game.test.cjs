@@ -11,6 +11,13 @@ const sandbox={document,window:{addEventListener(){}},performance:{now:()=>0},re
 vm.createContext(sandbox);for(const file of ['levels.js','scene-art.js','game.js'])vm.runInContext(readFileSync(file,'utf8'),sandbox);
 vm.runInContext(`
 reset();
+assert.equal($('#arkady-health-portrait').src,'assets/art/arkady-health-100.png');
+player.hp=75;updateHUD();assert.equal($('#arkady-health-portrait').src,'assets/art/arkady-health-75.png');
+player.hp=50;updateHUD();assert.equal($('#arkady-health-portrait').src,'assets/art/arkady-health-50.png');
+player.hp=25;updateHUD();assert.equal($('#arkady-health-portrait').src,'assets/art/arkady-health-50.png','Critical portrait starts below 25%');
+player.hp=24;updateHUD();assert.equal($('#arkady-health-portrait').src,'assets/art/arkady-health-25.png');
+player.hp=76;updateHUD();assert.equal($('#arkady-health-portrait').src,'assets/art/arkady-health-100.png');
+player.hp=100;updateHUD();
 // Real raycasting must read wall lettering left-to-right on all four faces.
 const originalDrawImage=ctx.drawImage;
 for(const angle of [0,Math.PI/2,Math.PI,Math.PI*1.5]){
@@ -52,7 +59,7 @@ finish(false);start();assert.equal(levelIndex,3,'Death retries malt house');asse
 kills=levelTotal;enemies=[];player.x=LEVELS[3].exit[0];player.y=LEVELS[3].exit[1];tick(.01);assert.equal(won,false,'Exit cannot bypass the silo rescue');
 interact();assert.equal(rescueStage,0,'Controls must be used in order and at close range');
 for(const [stage,type] of [[1,'aspiration'],[2,'screw'],[3,'hatch']]){const panel=props.find(p=>p.type===type);player.x=panel.x;player.y=panel.y;interact();assert.equal(rescueStage,stage);assert.equal(panel.active,true);}
-assert.equal(stellaVisible,true);assert.equal(won,false);player.x=LEVELS[3].stella[0];player.y=LEVELS[3].stella[1];tick(.01);assert.equal(won,false,'Stella remains visible until the player interacts');interact();assert.equal(won,true);assert.equal(transition,false);assert.ok($('#overlay').classList.toggle,'Finale overlay is available');assert.equal($('.cover-art').src,'assets/art/stella-kisses-arkady.png');
+assert.equal(stellaVisible,true);assert.equal(won,false);player.x=LEVELS[3].stella[0];player.y=LEVELS[3].stella[1];tick(.01);assert.equal(won,false,'Stella remains visible until the player interacts');const beforeFinaleAudio=audioEvents.length;interact();assert.equal(won,true);assert.equal(transition,false);assert.ok($('#overlay').classList.toggle,'Finale overlay is available');assert.equal($('.cover-art').src,'assets/art/stella-kisses-arkady.png');assert.ok(audioEvents.length>beforeFinaleAudio,'Finale triggers voice and kiss audio');
 assert.ok($('.intro p').innerHTML.includes('Стеллу'));assert.ok($('.intro p').innerHTML.includes('Четыре цеха'));assert.equal(LEVELS.length,4);
 start();assert.equal(kills,0);assert.equal(enemies.length,12);pause();assert.equal(running,false);start();assert.equal(running,true);
 // Both layouts: traversable spawn, every enemy and pickup, exit; props block movement.

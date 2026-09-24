@@ -21,7 +21,13 @@ function solid(x,y){return map[Math.floor(y)]?.[Math.floor(x)]!==0||props.some(p
 function move(o,dx,dy,r=.22){if(!solid(o.x+dx+Math.sign(dx)*r,o.y-r)&&!solid(o.x+dx+Math.sign(dx)*r,o.y+r))o.x+=dx;if(!solid(o.x-r,o.y+dy+Math.sign(dy)*r)&&!solid(o.x+r,o.y+dy+Math.sign(dy)*r))o.y+=dy;}
 function sight(x,y,tx,ty){let d=Math.hypot(tx-x,ty-y),n=Math.ceil(d/.15);for(let i=1;i<n;i++)if(solid(x+(tx-x)*i/n,y+(ty-y)*i/n))return false;return true;}
 function toast(s){$('#toast').textContent=s;$('#toast').style.opacity=1;toastTime=2.6;}
-function updateHUD(){$('#health').textContent=Math.ceil(player.hp);$('#healthbar').style.width=player.hp+'%';$('#weaponname').textContent=weapons[weapon].name;$('#ammo').textContent=weapons[weapon].ammo===Infinity?'∞':weapons[weapon].ammo;$('#kills').innerHTML=kills+' <em>/ '+levelTotal+'</em>';document.querySelectorAll('.weapon').forEach((b,i)=>b.classList.toggle('active',i===weapon));}
+function updateHUD(){
+ const health=Math.max(0,Math.min(100,Math.ceil(player.hp))),portrait=$('#arkady-health-portrait');
+ const state=health>=76?'100':health>=51?'75':health>=25?'50':'25';
+ const labels={100:'Аркадий здоров',75:'Аркадий получил лёгкие повреждения',50:'Аркадий сильно пострадал',25:'Аркадий критически ранен'};
+ $('#health').textContent=health;$('#healthbar').style.width=health+'%';portrait.src='assets/art/arkady-health-'+state+'.png';portrait.alt=labels[state];
+ $('#weaponname').textContent=weapons[weapon].name;$('#ammo').textContent=weapons[weapon].ammo===Infinity?'∞':weapons[weapon].ammo;$('#kills').innerHTML=kills+' <em>/ '+levelTotal+'</em>';document.querySelectorAll('.weapon').forEach((b,i)=>b.classList.toggle('active',i===weapon));
+}
 function choose(i){weapon=i;kick=.18;updateHUD();if(running)toast(weapons[i].name);}
 function start(){
  const fresh=!started||dead||won||transition;let event='start';
@@ -36,7 +42,7 @@ function pause(){if(!running)return;$('#radio-message').hidden=true;GameAudio.pa
 function finish(win){
  GameAudio.pause();transition=win&&levelIndex<LEVELS.length-1;
  GameAudio.say(win?(transition?['transition','waretransition','malttransition'][levelIndex]:'stellathanks'):'death',true);
- running=false;won=win&&!transition;dead=!win;fire=false;keys.clear();document.exitPointerLock?.();setFinaleCover(won);$('#overlay').hidden=false;$('#radio-message').hidden=true;
+ running=false;won=win&&!transition;dead=!win;fire=false;keys.clear();document.exitPointerLock?.();setFinaleCover(won);if(won)GameAudio.kiss?.();$('#overlay').hidden=false;$('#radio-message').hidden=true;
  const next=['РОЗЛИВ','СКЛАД','СОЛОДОВНЯ'][levelIndex];
  $('.intro h1').innerHTML=transition?'ДАЛЬШЕ —<br><span>'+next+'</span>':win?'СТЕЛЛА<br><span>СПАСЕНА</span>':'СМЕНА<br><span>ПРОПАЛА</span>';
  const transitions=['Варочный цех очищен. Но тара ожила!<br>Впереди линии банок и бутылок.','Розлив спасён. На складе взбесилась техника!<br>Мигающий маячок — предупреждение о таране.<br>Увернись: удар о стеллаж оглушит погрузчик.','Склад очищен. Сигнал ведёт в солодовню.<br>Кто-то заперт в силосе № 4. Пора открыть аварийный люк.'];
