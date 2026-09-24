@@ -45,7 +45,24 @@ const GameAudio=(()=>{
   ["warekill", "Снят с линии. И с гарантии."],
   ["warekill", "Вот теперь у тебя действительно ручной привод."],
   ["warehook", "Кто-то зовёт из силоса на солодовне! Монстры замуровали выход. Держись там. Аркадий своих не бросает!"],
-  ["warefinal", "Склад чист. Но смена не закончена. В силосе кто-то остался. Придётся спасать коллегу. И кто опять унёс мой фонарик?"]
+  ["warefinal", "Склад чист. Но смена не закончена. В силосе кто-то остался. Придётся спасать коллегу. И кто опять унёс мой фонарик?"],
+  ["malttransition", "Склад сдался. А в солодовне кто-то всё ещё ждёт. Пора открывать силос."],
+  ["maltstart", "Солодовня. Пыль, зерно и тишина. Стелла, держись, я уже близко."],
+  ["maltwalk", "Солод любит сухость. Эти твари, похоже, тоже."],
+  ["maltwalk", "Нория должна таскать зерно, а не мои нервы."],
+  ["maltwalk", "Запах солода хороший. Обстановка — нет."],
+  ["maltshoot", "Получай по суслам!"],
+  ["maltshoot", "Сейчас отделю зерно от плевел. И тебя заодно."],
+  ["maltshoot", "В помол тебя!"],
+  ["malthurt", "Осторожнее! Я тут спасатель, между прочим."],
+  ["malthurt", "Пыль в глаза — старый трюк."],
+  ["maltkill", "Сорт первый. Монстр — второй."],
+  ["maltkill", "Этот солод уже не прорастёт."],
+  ["maltcontrol1", "Аспирация включена. Дышать можно, работаем дальше."],
+  ["maltcontrol2", "Шнек в реверс. Давай, освобождай люк."],
+  ["maltopen", "Аварийный люк открыт. Стелла, выходи!"],
+  ["stellathanks", "Аркадий! Спасибо! Я уже думала, что останусь в этом силосе до следующей варки.", "Стелла"],
+  ["stellathanks", "Ты вовремя. Монстры заперли меня, когда я проверяла подачу солода. Спасибо, Аркадий!", "Стелла"]
  ];
  let ac,master,effects,voiceGain,buffers={},loading,enabled=true,active=false,voice=null,ambient=null,walking=null,voiceUntil=0,nextVoice=0,walkTime=0,nextWalk=13,foamAt=-1,stepAt=-1,lastLine={},subtitleTimer,loadVersion=0;
  const live=new Set();let level=0,monsterAt=-10,vehicleAt={};
@@ -63,20 +80,20 @@ const GameAudio=(()=>{
  async function load(){if(loading)return loading;const version=++loadVersion;loading=(async()=>{const entries=Object.entries(files);for(let i=0;i<lines.length;i++)entries.push(['voice'+i,`voice/${String(i+1).padStart(2,'0')}.mp3`]);await Promise.all(entries.map(async([id,path])=>{try{let r=await fetch('assets/audio/'+path);if(!r.ok)throw Error(r.status);const data=await r.arrayBuffer();const b=await ac.decodeAudioData(data);if(version===loadVersion)buffers[id]=b;}catch(err){console.warn('Audio unavailable:',path,err.message);}}));})();return loading;}
  function sample(id,{volume=1,rate=1,pan=0,offset=0,duration,loop=false,channel=effects}={}){if(!ac||!enabled||!buffers[id])return null;const b=buffers[id];const s=ac.createBufferSource(),g=ac.createGain();s.buffer=b;s.playbackRate.value=rate;s.loop=loop;g.gain.value=volume;s.connect(g);if(ac.createStereoPanner){const p=ac.createStereoPanner();p.pan.value=Math.max(-1,Math.min(1,pan));g.connect(p);p.connect(channel);}else g.connect(channel);const entry={s,g};live.add(entry);s.onended=()=>live.delete(entry);const start=Math.min(offset,b.duration-.01);if(duration&&!loop){const len=Math.min(duration,b.duration-start);g.gain.setValueAtTime(volume,ac.currentTime);g.gain.setValueAtTime(volume,ac.currentTime+Math.max(0,len/rate-.025));g.gain.linearRampToValueAtTime(0,ac.currentTime+len/rate);s.start(0,start,len);}else s.start(0,start);return entry;}
  function stop(entry){if(!entry)return;try{entry.s.stop();}catch{}live.delete(entry);}
- function ambientOn(){musicOn();if(!active||!enabled||ambient)return;ambient=level===2?sample('forklift',{loop:true,volume:.045,rate:.65,offset:4}):sample('steam',{loop:true,volume:.022,rate:.6});}
+ function ambientOn(){musicOn();if(!active||!enabled||ambient)return;ambient=level===2?sample('forklift',{loop:true,volume:.045,rate:.65,offset:4}):sample('steam',{loop:true,volume:level===3?.032:.022,rate:level===3?.48:.6});}
  async function resume(){init();active=true;await ac.resume();await load();if(active)ambientOn();}
  function clearVoice(){stop(voice);voice=null;voiceUntil=0;clearTimeout(subtitleTimer);if(subtitle())subtitle().hidden=true;mix();}
  function pause(){active=false;musicOff();stop(ambient);ambient=null;stop(walking);walking=null;clearVoice();for(const entry of [...live])stop(entry);}
  function reset(){pause();musicOffset=0;nextVoice=0;walkTime=0;nextWalk=13;monsterAt=-10;vehicleAt={};lastLine={};foamAt=-1;stepAt=-1;}
  function setEnabled(value){enabled=value;if(!ac){if(value)init();return;}master.gain.setTargetAtTime(value?1:0,ac.currentTime,.03);if(!value){musicOff();clearVoice();stop(ambient);ambient=null;}else{ac.resume();load().then(ambientOn);}}
- function say(event,force=false){if(!enabled||!ac)return false;const now=ac.currentTime;if(!force&&(now<voiceUntil||now<nextVoice))return false;let candidates=lines.map((l,i)=>l[0]===event?i:-1).filter(i=>i>=0&&buffers['voice'+i]);if(!candidates.length)return false;if(candidates.length>1)candidates=candidates.filter(i=>i!==lastLine[event]);let id=candidates[Math.floor(Math.random()*candidates.length)];clearVoice();lastLine[event]=id;const duration=buffers['voice'+id].duration;voice=sample('voice'+id,{channel:voiceGain});voiceUntil=now+duration;nextVoice=voiceUntil+(event.endsWith('walk')?12:5);mix();const el=subtitle();if(el){el.textContent='Аркадий: '+lines[id][1];el.hidden=false;}subtitleTimer=setTimeout(()=>{if(el)el.hidden=true;voice=null;mix();},duration*1000);return true;}
+ function say(event,force=false){if(!enabled||!ac)return false;const now=ac.currentTime;if(!force&&(now<voiceUntil||now<nextVoice))return false;let candidates=lines.map((l,i)=>l[0]===event?i:-1).filter(i=>i>=0&&buffers['voice'+i]);if(!candidates.length)return false;if(candidates.length>1)candidates=candidates.filter(i=>i!==lastLine[event]);let id=candidates[Math.floor(Math.random()*candidates.length)];clearVoice();lastLine[event]=id;const duration=buffers['voice'+id].duration;voice=sample('voice'+id,{channel:voiceGain});voiceUntil=now+duration;nextVoice=voiceUntil+(event.endsWith('walk')?12:5);mix();const el=subtitle();if(el){el.textContent=(lines[id][2]||'Аркадий')+': '+lines[id][1];el.hidden=false;}subtitleTimer=setTimeout(()=>{if(el)el.hidden=true;voice=null;mix();},duration*1000);return true;}
  function shot(type){if(!active||!ac)return;const now=ac.currentTime;if(type==='bottle')sample('can',{volume:.28,rate:.7,offset:.05,duration:.2});if(type==='can')sample('can',{volume:.6,duration:.7});if(type==='cork')sample('can',{volume:.34,rate:1.9,offset:.05,duration:.16});if(type==='foam'&&now-foamAt>.23){sample('steam',{volume:.4,rate:1.1,offset:1,duration:.36});foamAt=now;}}
  function impact(type,distance=1,pan=0){const volume=Math.max(.06,1/(1+distance*.35));if(type==='bottle')sample('glass',{volume:volume*.62,pan,rate:.92+Math.random()*.16});if(type==='can'){sample('glass',{volume:volume*.6,rate:.48,pan,duration:1});sample('steam',{volume:volume*.5,rate:.6,pan,duration:.65});}}
- function update(dt,moving,sprinting){if(!active||!ac)return;ambientOn();if(moving){walkTime+=dt;const now=ac.currentTime;if(now-stepAt>(sprinting?.3:.44)){sample('steps',{volume:.28,offset:.28,duration:.25,rate:sprinting?1.18:1,pan:Math.sin(now*5)*.14});stepAt=now;}if(walkTime>nextWalk&&say(['walk','packwalk','warewalk'][level]))nextWalk=walkTime+22;}}
+ function update(dt,moving,sprinting){if(!active||!ac)return;ambientOn();if(moving){walkTime+=dt;const now=ac.currentTime;if(now-stepAt>(sprinting?.3:.44)){sample('steps',{volume:.28,offset:.28,duration:.25,rate:sprinting?1.18:1,pan:Math.sin(now*5)*.14});stepAt=now;}if(walkTime>nextWalk&&say(['walk','packwalk','warewalk','maltwalk'][level]))nextWalk=walkTime+22;}}
  function monster(type,distance=1,pan=0,attack=false){
   if(!active||!ac||ac.currentTime-monsterAt<(attack?.6:1.6))return;
-  monsterAt=ac.currentTime;const id=type===5||type===1?'monsterLarge':type===3?'monsterCan':'monsterSmall';
-  sample(id,{volume:(attack?.72:.45)/(1+distance*.17),pan,rate:(type===5?.85:type===4?1.2:1)*( .94+Math.random()*.12)});
+  monsterAt=ac.currentTime;const id=type===5||type===10||type===1?'monsterLarge':type===3?'monsterCan':'monsterSmall';
+  sample(id,{volume:(attack?.72:.45)/(1+distance*.17),pan,rate:(type===10?.72:type===8?1.36:type===9?.86:type===5?.85:type===4?1.2:1)*( .94+Math.random()*.12)});
  }
  function vehicle(event,distance=1,pan=0){
   if(!active||!ac)return;const now=ac.currentTime;

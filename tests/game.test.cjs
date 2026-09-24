@@ -44,8 +44,15 @@ finish(false);start();assert.equal(levelIndex,1,'Death retries second level');as
 kills=levelTotal;enemies=[];player.x=18.2;player.y=16.5;tick(.01);assert.equal(won,false);assert.equal(transition,true);
 start();assert.equal(levelIndex,2);assert.equal(enemies.length,14);assert.equal(weapons[1].ammo,32);
 finish(false);start();assert.equal(levelIndex,2,'Death retries warehouse');assert.equal(storyHeard,false);
-kills=levelTotal;enemies=[];player.x=20.2;player.y=18.5;tick(.01);assert.equal(won,true);assert.equal(transition,false);
-assert.ok($('.intro p').innerHTML.includes('Кто там — пока неизвестно'));assert.ok(!/Нин[аы]|Стелл/.test($('.intro p').innerHTML));assert.ok($('.intro p').innerHTML.includes('продолжение следует'));assert.equal(LEVELS.length,3);
+kills=levelTotal;enemies=[];player.x=20.2;player.y=18.5;tick(.01);assert.equal(won,false);assert.equal(transition,true);
+assert.ok($('.intro p').innerHTML.includes('Кто-то заперт'));assert.ok(!/Нин[аы]|Стелл/.test($('.intro p').innerHTML),'Warehouse transition keeps rescue identity secret');
+start();assert.equal(levelIndex,3);assert.equal(enemies.length,17);assert.equal(weapons[1].ammo,38);assert.equal(rescueStage,0);
+finish(false);start();assert.equal(levelIndex,3,'Death retries malt house');assert.equal(rescueStage,0);assert.equal(stellaVisible,false);
+kills=levelTotal;enemies=[];player.x=LEVELS[3].exit[0];player.y=LEVELS[3].exit[1];tick(.01);assert.equal(won,false,'Exit cannot bypass the silo rescue');
+interact();assert.equal(rescueStage,0,'Controls must be used in order and at close range');
+for(const [stage,type] of [[1,'aspiration'],[2,'screw'],[3,'hatch']]){const panel=props.find(p=>p.type===type);player.x=panel.x;player.y=panel.y;interact();assert.equal(rescueStage,stage);assert.equal(panel.active,true);}
+assert.equal(stellaVisible,true);assert.equal(won,false);player.x=LEVELS[3].stella[0];player.y=LEVELS[3].stella[1];tick(.01);assert.equal(won,true);assert.equal(transition,false);
+assert.ok($('.intro p').innerHTML.includes('Стеллу'));assert.ok($('.intro p').innerHTML.includes('Четыре цеха'));assert.equal(LEVELS.length,4);
 start();assert.equal(kills,0);assert.equal(enemies.length,12);pause();assert.equal(running,false);start();assert.equal(running,true);
 // Both layouts: traversable spawn, every enemy and pickup, exit; props block movement.
 for(let index=0;index<LEVELS.length;index++){
@@ -53,6 +60,7 @@ for(let index=0;index<LEVELS.length;index++){
  for(let k=0;k<queue.length;k++){const [x,y]=queue[k];for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy,key=nx+','+ny;if(!solid(nx+.5,ny+.5)&&!seen.has(key)){seen.add(key);queue.push([nx,ny]);}}}
  for(const e of [...enemies,...items,{x:LEVELS[index].exit[0],y:LEVELS[index].exit[1]}])assert.ok(seen.has(Math.floor(e.x)+','+Math.floor(e.y)),'Unreachable in level '+index+': '+e.x+','+e.y);
  for(const p of props)assert.ok(solid(p.x,p.y),'Equipment collision');
+ if(index===3)for(const type of ['aspiration','screw','hatch']){const p=props.find(p=>p.type===type);assert.ok([[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>seen.has(Math.floor(p.x+dx)+','+Math.floor(p.y+dy))),'Unreachable rescue control '+type);}
  running=true;kills=0;player.x=LEVELS[index].exit[0];player.y=LEVELS[index].exit[1];tick(.01);assert.equal(running,true,'Exit stays locked until clear');
  drawWorld();drawSprites();
 }
@@ -71,5 +79,5 @@ for(let i=0;i<40;i++)tick(.04);assert.equal(player.hp,72,'Exactly one ram hit');
 loadLevel(2);running=true;player.x=2.5;player.y=2.5;enemies=[truckAt(7.5,5.5)];truck=enemies[0];truck.mode='charge';truck.phase=.95;truck.heading=Math.PI;
 for(let i=0;i<10;i++)tick(.04);assert.equal(truck.mode,'recover');assert.equal(truck.hp,235);assert.ok(truck.x>=6.3,'No tunnelling through racks');
 loadLevel(2);running=true;kills=levelTotal-4;warehouseStory();assert.equal(storyHeard,false);kills++;warehouseStory();assert.equal(storyHeard,true);assert.ok($('#radio-message').innerHTML.includes('замуровали'));storyTimer=7;warehouseStory();assert.equal(storyTimer,7,'Story only plays once');pause();assert.equal($('#radio-message').hidden,true);
-console.log('PASS: wall orientation on all four faces, reachability, collisions, projectile hits, all weapons, splash, pickups, death, victory, restart, pause');
+console.log('PASS: four levels, wall orientation, reachability, collisions, combat, warehouse charges, ordered silo rescue, Stella finale, restart, pause');
 `,sandbox);
