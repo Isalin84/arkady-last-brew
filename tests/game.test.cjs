@@ -6,7 +6,8 @@ const context=new Proxy({createLinearGradient:()=>gradient},{get:(t,p)=>t[p]||((
 const elements=new Map();
 const element=()=>({style:{},classList:{toggle(){}},addEventListener(){},getContext:()=>context,requestPointerLock:()=>Promise.resolve(),textContent:'',innerHTML:'',hidden:false});
 const document={querySelector(s){if(!elements.has(s))elements.set(s,element());return elements.get(s)},querySelectorAll:()=>[],createElement:element,addEventListener(){},exitPointerLock(){}};
-const sandbox={document,window:{addEventListener(){}},performance:{now:()=>0},requestAnimationFrame(){},matchMedia:()=>({matches:false}),GameAudio:new Proxy({resume:()=>Promise.resolve()},{get:(t,p)=>t[p]||(()=>{})}),console,assert};
+const audioEvents=[],audioMock={resume:()=>({then(fn){fn();return this}}),say:event=>{audioEvents.push(event);return true}};
+const sandbox={document,window:{addEventListener(){}},performance:{now:()=>0},requestAnimationFrame(){},matchMedia:()=>({matches:false}),GameAudio:new Proxy(audioMock,{get:(t,p)=>t[p]||(()=>{})}),console,assert,audioEvents};
 vm.createContext(sandbox);for(const file of ['levels.js','scene-art.js','game.js'])vm.runInContext(readFileSync(file,'utf8'),sandbox);
 vm.runInContext(`
 reset();
@@ -37,21 +38,21 @@ reset();running=true;choose(3);shoot();assert.equal(weapons[3].ammo,79);assert.e
 reset();enemies=[{x:3.4,y:2.8,hp:70,max:70,type:0},{x:3.8,y:3.1,hp:70,max:70,type:0}];impact({x:3.5,y:3,type:'can',damage:95});assert.equal(kills,2);
 // Health pickup and both terminal states.
 reset();running=true;player.hp=50;player.x=1.5;player.y=4.5;tick(.01);assert.equal(player.hp,85);
-finish(false);assert.equal(dead,true);start();assert.equal(player.hp,100);assert.equal(kills,0);assert.equal(running,true);
+finish(false);assert.equal(dead,true);start();assert.equal(player.hp,100);assert.equal(kills,0);assert.equal(running,true);assert.equal(audioEvents.at(-1),'start');
 kills=12;enemies=[];player.x=13.5;player.y=14.5;tick(.01);assert.equal(transition,true);assert.equal(won,false);assert.equal(running,false);
-start();assert.equal(levelIndex,1);assert.equal(enemies.length,16);assert.ok(player.hp>=75);
-finish(false);start();assert.equal(levelIndex,1,'Death retries second level');assert.equal(kills,0);
+start();assert.equal(levelIndex,1);assert.equal(enemies.length,16);assert.ok(player.hp>=75);assert.equal(audioEvents.at(-1),'packstart','Packaging only plays packaging intro');
+finish(false);start();assert.equal(levelIndex,1,'Death retries second level');assert.equal(kills,0);assert.equal(audioEvents.at(-1),'packstart');
 kills=levelTotal;enemies=[];player.x=18.2;player.y=16.5;tick(.01);assert.equal(won,false);assert.equal(transition,true);
-start();assert.equal(levelIndex,2);assert.equal(enemies.length,14);assert.equal(weapons[1].ammo,32);
-finish(false);start();assert.equal(levelIndex,2,'Death retries warehouse');assert.equal(storyHeard,false);
+start();assert.equal(levelIndex,2);assert.equal(enemies.length,14);assert.equal(weapons[1].ammo,32);assert.equal(audioEvents.at(-1),'warestart','Warehouse only plays warehouse intro');
+finish(false);start();assert.equal(levelIndex,2,'Death retries warehouse');assert.equal(storyHeard,false);assert.equal(audioEvents.at(-1),'warestart');
 kills=levelTotal;enemies=[];player.x=20.2;player.y=18.5;tick(.01);assert.equal(won,false);assert.equal(transition,true);
 assert.ok($('.intro p').innerHTML.includes('Кто-то заперт'));assert.ok(!/Нин[аы]|Стелл/.test($('.intro p').innerHTML),'Warehouse transition keeps rescue identity secret');
-start();assert.equal(levelIndex,3);assert.equal(enemies.length,17);assert.equal(weapons[1].ammo,38);assert.equal(rescueStage,0);
-finish(false);start();assert.equal(levelIndex,3,'Death retries malt house');assert.equal(rescueStage,0);assert.equal(stellaVisible,false);
+start();assert.equal(levelIndex,3);assert.equal(enemies.length,17);assert.equal(weapons[1].ammo,38);assert.equal(rescueStage,0);assert.equal(audioEvents.at(-1),'maltstart','Malt house only plays malt-house intro');
+finish(false);start();assert.equal(levelIndex,3,'Death retries malt house');assert.equal(rescueStage,0);assert.equal(stellaVisible,false);assert.equal(audioEvents.at(-1),'maltstart');
 kills=levelTotal;enemies=[];player.x=LEVELS[3].exit[0];player.y=LEVELS[3].exit[1];tick(.01);assert.equal(won,false,'Exit cannot bypass the silo rescue');
 interact();assert.equal(rescueStage,0,'Controls must be used in order and at close range');
 for(const [stage,type] of [[1,'aspiration'],[2,'screw'],[3,'hatch']]){const panel=props.find(p=>p.type===type);player.x=panel.x;player.y=panel.y;interact();assert.equal(rescueStage,stage);assert.equal(panel.active,true);}
-assert.equal(stellaVisible,true);assert.equal(won,false);player.x=LEVELS[3].stella[0];player.y=LEVELS[3].stella[1];tick(.01);assert.equal(won,true);assert.equal(transition,false);
+assert.equal(stellaVisible,true);assert.equal(won,false);player.x=LEVELS[3].stella[0];player.y=LEVELS[3].stella[1];tick(.01);assert.equal(won,false,'Stella remains visible until the player interacts');interact();assert.equal(won,true);assert.equal(transition,false);assert.ok($('#overlay').classList.toggle,'Finale overlay is available');assert.equal($('.cover-art').src,'assets/art/stella-kisses-arkady.png');
 assert.ok($('.intro p').innerHTML.includes('Стеллу'));assert.ok($('.intro p').innerHTML.includes('Четыре цеха'));assert.equal(LEVELS.length,4);
 start();assert.equal(kills,0);assert.equal(enemies.length,12);pause();assert.equal(running,false);start();assert.equal(running,true);
 // Both layouts: traversable spawn, every enemy and pickup, exit; props block movement.
