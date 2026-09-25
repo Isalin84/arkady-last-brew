@@ -6,9 +6,9 @@ const ScoreCard=(()=>{
  function fitCover(ctx,image,x,y,w,h){const scale=Math.max(w/image.naturalWidth,h/image.naturalHeight),sw=w/scale,sh=h/scale,sx=(image.naturalWidth-sw)/2,sy=(image.naturalHeight-sh)/2;ctx.drawImage(image,sx,sy,sw,sh,x,y,w,h);}
  async function create(result){
   const canvas=document.createElement('canvas');canvas.width=1200;canvas.height=630;const ctx=canvas.getContext('2d');
-  const [hero,logo]=await Promise.all([loadImage('assets/art/arkady-cover.webp'),loadImage('assets/art/brand/logo.png')]);
+  const [hero,logo]=await Promise.all([loadImage('assets/art/stella-kisses-arkady.webp'),loadImage('assets/art/brand/logo.png')]);
   ctx.fillStyle='#0B1D3A';ctx.fillRect(0,0,1200,630);
-  if(hero){fitCover(ctx,hero,610,0,590,630);const fade=ctx.createLinearGradient(560,0,1010,0);fade.addColorStop(0,'#0B1D3A');fade.addColorStop(.55,'rgba(11,29,58,.7)');fade.addColorStop(1,'rgba(11,29,58,.05)');ctx.fillStyle=fade;ctx.fillRect(540,0,660,630);}
+  if(hero){fitCover(ctx,hero,0,0,1200,630);const fade=ctx.createLinearGradient(0,0,790,0);fade.addColorStop(0,'rgba(11,29,58,.99)');fade.addColorStop(.62,'rgba(11,29,58,.88)');fade.addColorStop(1,'rgba(11,29,58,.08)');ctx.fillStyle=fade;ctx.fillRect(0,0,920,630);}
   ctx.fillStyle='#D4AF37';ctx.fillRect(0,0,1200,14);ctx.fillRect(68,116,220,5);
   if(logo)ctx.drawImage(logo,68,38,68,68);
   ctx.fillStyle='#FAF9F6';ctx.font='800 24px Montserrat,Arial,sans-serif';ctx.fillText('BEST PRACTICE AI · ПОСЛЕДНЯЯ ВАРКА',154,80);
@@ -19,7 +19,7 @@ const ScoreCard=(()=>{
   ctx.fillStyle='#D4AF37';ctx.font='800 31px Montserrat,Arial,sans-serif';ctx.fillText('СМОЖЕШЬ НАБРАТЬ БОЛЬШЕ?',68,456);
   ctx.fillStyle='#DCE2EC';ctx.font='500 21px Montserrat,Arial,sans-serif';ctx.fillText('Сравни результат с коллегами:',68,501);
   ctx.fillStyle='#FAF9F6';ctx.font='700 22px monospace';ctx.fillText(GAME_URL,68,542);
-  ctx.fillStyle='#BAC5D5';ctx.font='500 16px Montserrat,Arial,sans-serif';ctx.fillText('Arkady is Back · v0.8',68,588);
+  ctx.fillStyle='#BAC5D5';ctx.font='500 16px Montserrat,Arial,sans-serif';ctx.fillText('Стелла спасена · Arkady is Back · v0.9',68,588);
   currentBlob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
   if(currentUrl)URL.revokeObjectURL(currentUrl);currentUrl=URL.createObjectURL(currentBlob);currentName=`arkady-${result.score}-points.png`;
   return{url:currentUrl,blob:currentBlob,name:currentName,gameUrl:GAME_URL};

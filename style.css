@@ -37,3 +37,42 @@ h1{font:900 clamp(28px,4.5vw,65px)/1.02 Montserrat,sans-serif;letter-spacing:-2p
 @media(max-width:800px){#hud{padding-inline:4%;gap:9px}}
 @media(max-width:500px){#hud{padding:4px 7px;gap:6px}#hud strong{font-size:21px}.meter{width:45px}.portrait img{width:36px;height:36px}.ammo small{max-width:68px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.hud-score strong{font-size:19px}}
 @media(max-width:700px){#overlay.finale{align-items:flex-start;padding-top:23px}#overlay.finale .intro{width:42%;max-width:none}#overlay.finale .intro h1{font-size:25px}#overlay.finale .intro p{display:none}#overlay.finale #start{min-width:0;width:100%;font-size:10px;padding:9px}#score-panel{top:18px;right:3%;bottom:18px;width:52%;padding:11px 10px}.score-heading{gap:5px}.score-heading span{font-size:8px}.score-heading strong{font-size:31px}.score-heading small{font-size:8px}#score-breakdown{font-size:8px;margin:0 0 6px}.score-actions{gap:4px;margin:6px 0}.score-actions button{min-width:46%;font-size:8px;padding:6px 4px}#score-panel h2{font-size:9px;margin:7px 0 4px}#score-panel table{font-size:8px}#score-panel th,#score-panel td{padding:3px}.records-note{font-size:7px}}
+
+/* v0.9 finale: let Stella's line and the kiss land before revealing results. */
+#subtitle{z-index:7}
+#show-results{position:absolute;z-index:8;top:5%;right:3%;padding:10px 14px;border:1px solid #faf9f680;background:#0b1d3a99;color:#faf9f6;font-size:11px;font-weight:700;backdrop-filter:blur(5px);animation:result-prompt-in .5s 1.8s both}
+#show-results[hidden]{display:none}
+#overlay.finale{padding:5% 5.5%}
+#overlay.finale::after{background:linear-gradient(90deg,#0B1D3Af2 0%,#0b1d3ab8 30%,#0b1d3a1a 51%,transparent 70%)}
+#overlay.finale .intro{width:37%;max-width:470px}
+#overlay.finale .intro .stamp{border-color:#d4af37}
+#overlay.finale .intro p{font-size:clamp(12px,1.15vw,16px);line-height:1.55}
+#overlay.finale-moment .intro #start,#overlay.finale-moment .intro>small,#overlay.finale-moment .studio-credit{display:none}
+#overlay.finale-results::after{background:linear-gradient(90deg,#0B1D3Af7 0%,#0b1d3ad9 35%,#0b1d3a22 58%,transparent 74%)}
+#overlay.finale-results .intro{display:none}
+#overlay.finale-results #score-panel{display:block;left:3%;right:auto;top:3%;bottom:3%;width:min(43%,520px);padding:18px 20px;background:#07182de8;animation:results-in .55s cubic-bezier(.22,.8,.32,1) both}
+#overlay.finale-results #score-panel[hidden]{display:none}
+#overlay.finale-results #score-card-preview{border-color:#d4af37}
+#replay-score{background:#faf9f6!important;color:#0b1d3a!important;border-color:#faf9f6!important}
+@keyframes results-in{from{opacity:0;transform:translateX(-24px)}to{opacity:1;transform:none}}
+@keyframes result-prompt-in{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+@media(max-width:700px){
+ #overlay.finale{align-items:flex-end;padding:6%;min-height:0}
+ #overlay.finale .cover-art{object-position:63% center}
+ #overlay.finale::after{background:linear-gradient(0deg,#0b1d3ae8 0%,#0b1d3a70 32%,transparent 62%)}
+ #overlay.finale-moment .intro{width:72%;padding-bottom:4%}
+ #overlay.finale-moment .intro h1{font-size:clamp(27px,9vw,40px)}
+ #overlay.finale-moment .intro p{display:block;font-size:10px;margin:10px 0 0}
+ #show-results{top:14px;right:12px;padding:8px 10px;font-size:9px}
+ #overlay.finale-results{padding:0}
+ #overlay.finale-results::after{background:linear-gradient(0deg,#07182df8 0%,#07182ded 57%,transparent 78%)}
+ #overlay.finale-results #score-panel{left:3%;right:3%;top:43%;bottom:12px;width:auto;padding:12px 11px;border-top-width:4px}
+ #overlay.finale-results .score-heading strong{font-size:34px}
+ #overlay.finale-results #score-breakdown{font-size:8px;margin:0 0 7px}
+ #overlay.finale-results .score-actions button{min-width:46%;font-size:8px;padding:7px 4px}
+ #overlay.finale-results #score-panel h2{font-size:9px;margin:8px 0 4px}
+ #overlay.finale-results #score-panel table{font-size:8px}
+ #overlay.finale-results #score-panel th,#overlay.finale-results #score-panel td{padding:3px}
+ #stage:has(#overlay.finale) #subtitle{bottom:auto;top:33%;font-size:10px;max-width:90%;z-index:9}
+}
+@media(prefers-reduced-motion:reduce){#overlay.finale .cover-art,#show-results,#overlay.finale-results #score-panel{animation:none}}

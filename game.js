@@ -2,12 +2,12 @@
 const canvas=document.querySelector('#game'),ctx=canvas.getContext('2d',{alpha:false});
 const W=960,H=540,VIEW=470,FOV=Math.PI/3;
 const $=s=>document.querySelector(s);
-let map,props=[],levelIndex=0,levelTotal=12,transition=false,checkpoint=null,pathField=[],pathAt=-1,storyHeard=false,storyTimer=0,rescueStage=0,stellaVisible=false,renderRequested=true;
+let map,props=[],levelIndex=0,levelTotal=12,transition=false,checkpoint=null,pathField=[],pathAt=-1,storyHeard=false,storyTimer=0,rescueStage=0,stellaVisible=false,renderRequested=true,finaleSequence=0,finalResult=null;
 const weapons=[{name:'Смена №7 · IPA',ammo:Infinity,cool:.5,damage:42,speed:10,type:'bottle'},{name:'Котёл 13 · стаут',ammo:18,cool:.8,damage:95,speed:7,type:'can'},{name:'Пробкомёт',ammo:120,cool:.12,damage:19,speed:24,type:'cork'},{name:'Пенная пушка',ammo:80,cool:.09,damage:11,speed:8,type:'foam'}];
 let player,enemies,items,shots=[],particles=[],running=false,started=false,won=false,dead=false,kills=0,weapon=0,fire=false,showMap=false,clock=0,cooldown=0,kick=0,hurt=0,toastTime=0,audioEnabled=true,step=0;
 const keys=new Set(),depth=new Float32Array(W);
 function loadLevel(index,restore=false){
- GameAudio.reset();setFinaleCover(false);storyHeard=false;storyTimer=0;rescueStage=0;stellaVisible=false;$('#radio-message').hidden=true;pathAt=-1;pathField=[];levelIndex=index;const level=LEVELS[index];map=level.map.map(r=>r.split('').map(Number));
+ finaleSequence++;finalResult=null;GameAudio.reset();setFinaleCover(false);storyHeard=false;storyTimer=0;rescueStage=0;stellaVisible=false;$('#radio-message').hidden=true;pathAt=-1;pathField=[];levelIndex=index;const level=LEVELS[index];map=level.map.map(r=>r.split('').map(Number));
  props=level.props.map(([x,y,type,size,r])=>({x,y,type,size,r,active:false}));
  const [x,y,a]=level.spawn;player={x,y,a,hp:restore&&checkpoint?checkpoint.hp:100};
  enemies=level.enemies.map(([x,y,type],i)=>({x,y,type,hp:ENEMY_TYPES[type].hp,max:ENEMY_TYPES[type].hp,attack:0,hit:0,seed:i*3.1,alert:false,mode:'hunt',phase:0,chargeCooldown:1.5,heading:Math.PI}));levelTotal=enemies.length;
@@ -48,19 +48,27 @@ function finish(win){
  $('.intro p').innerHTML=transition?next.text+'<br>Припасы пополнены, здоровье — не ниже 75.':win?'Аспирация работает, шнек остановлен, аварийный люк открыт.<br>Аркадий вывел Стеллу из силоса. Солодовня снова под контролем.<br><b>Четыре цеха очищены. Ночная смена завершена.</b>':`Уничтожено: ${kills} из ${levelTotal}.<br>Попробуй ещё раз с начала этого цеха.`;
  $('#start').innerHTML=(transition?next.button:win?'Попробовать набрать больше':'Повторить цех')+' <span>↗</span>';
  $('#status').textContent=transition?`Уровень ${levelIndex+1} из ${LEVELS.length} пройден`:win?'Глава 04 завершена · Стелла спасена':'Смена прервана';
- if(won)showFinalScore(GameScore.finish(player.hp));
+ if(won){
+  finalResult=GameScore.finish(player.hp);prepareFinalScore(finalResult);
+  const sequence=++finaleSequence,spoken=Number(GameAudio.voiceSeconds?.())||7.9;
+  setTimeout(()=>{if(sequence===finaleSequence&&won)revealFinalScore();},Math.max(5600,spoken*1000+650));
+ }
 }
 function setFinaleCover(finale){
  const overlay=$('#overlay'),art=$('.cover-art');overlay.classList.toggle('finale',finale);
+ overlay.classList.toggle('finale-moment',finale);overlay.classList.remove('finale-results');
  art.src=finale?'assets/art/stella-kisses-arkady.webp':'assets/art/arkady-cover.webp';
  art.alt=finale?'Стелла целует спасшего её Аркадия в щёку в солодовне':'Аркадий со скрещёнными руками на фоне пивоварни';
- if(!finale)$('#score-panel').hidden=true;
+ $('#show-results').hidden=!finale;if(!finale)$('#score-panel').hidden=true;
 }
-async function showFinalScore(result){
- $('#score-panel').hidden=false;$('#final-score').textContent=result.score;$('#score-breakdown').textContent=`Зачистка +${result.clearBonus} · здоровье +${result.healthBonus} · скорость +${result.timeBonus}`;
+async function prepareFinalScore(result){
+ $('#final-score').textContent=result.score;$('#score-breakdown').textContent=`Зачистка +${result.clearBonus} · здоровье +${result.healthBonus} · скорость +${result.timeBonus}`;
  $('#score-records').innerHTML=result.records.map((record,index)=>`<tr class="${record.id===result.id?'current':''}"><td>${index+1}</td><td>${record.score}</td><td>${GameScore.formatTime(record.time)}</td><td>${record.health}%</td></tr>`).join('');
  $('#score-card-preview').removeAttribute('src');$('#score-card-preview').alt='Создаётся карточка результата';
  try{const card=await ScoreCard.create(result);$('#score-card-preview').src=card.url;$('#score-card-preview').alt=`Карточка результата: ${result.score} очков`;}catch(err){console.warn('Score card unavailable:',err.message);}
+}
+function revealFinalScore(){
+ if(!won||!finalResult)return;const overlay=$('#overlay');overlay.classList.remove('finale-moment');overlay.classList.add('finale-results');$('#show-results').hidden=true;$('#score-panel').hidden=false;
 }
 function shoot(){let w=weapons[weapon];if(cooldown>0)return;if(w.ammo<=0){toast('Припасы закончились. Найди ящик или возьми бутылку: 1');cooldown=.4;return;}w.ammo--;GameScore.shot();cooldown=w.cool;kick=1;let count=weapon===3?3:1;for(let i=0;i<count;i++){let a=player.a+(i-(count-1)/2)*.1;shots.push({x:player.x+Math.cos(a)*.25,y:player.y+Math.sin(a)*.25,dx:Math.cos(a)*w.speed,dy:Math.sin(a)*w.speed,type:w.type,damage:w.damage,life:weapon===3?.65:2.5,age:0});}GameAudio.shot(w.type);GameAudio.say(LEVELS[levelIndex].dialogue.shoot);updateHUD();}
 function burst(x,y,color,n=14){for(let i=0;i<n;i++){let a=Math.random()*Math.PI*2,s=Math.random()*1.8;particles.push({x,y,dx:Math.cos(a)*s,dy:Math.sin(a)*s,z:Math.random()*.6,color,life:.35+Math.random()*.3});}}
@@ -210,6 +218,7 @@ function scoreButtonFeedback(button,text){const old=button.textContent;button.te
 $('#download-score').addEventListener('click',()=>{ScoreCard.download();scoreButtonFeedback($('#download-score'),'Картинка скачана');});
 $('#copy-game-link').addEventListener('click',async()=>{try{await ScoreCard.copyLink();scoreButtonFeedback($('#copy-game-link'),'Ссылка скопирована');}catch{scoreButtonFeedback($('#copy-game-link'),'Не удалось скопировать');}});
 $('#share-score').addEventListener('click',async()=>{try{if(await ScoreCard.share())scoreButtonFeedback($('#share-score'),'Отправлено');else{ScoreCard.download();await ScoreCard.copyLink();scoreButtonFeedback($('#share-score'),'Скачано + ссылка');}}catch(err){if(err?.name!=='AbortError')scoreButtonFeedback($('#share-score'),'Не удалось отправить');}});
+$('#show-results').addEventListener('click',revealFinalScore);$('#replay-score').addEventListener('click',start);
 window.addEventListener('keydown',e=>{if(e.target?.matches?.('input,textarea,select'))return;if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(e.code==='Escape'){pause();return;}if(e.code==='KeyM'&&!e.repeat)showMap=!showMap;if(e.code==='KeyE'&&!e.repeat)interact();if(['Digit1','Digit2','Digit3','Digit4'].includes(e.code))choose(Number(e.code.slice(-1))-1);if(running){keys.add(e.code);if(e.code==='Space'&&!e.repeat)shoot();}});window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',pause);document.addEventListener('visibilitychange',()=>{if(document.hidden){pause();GameAudio.pause();}});document.addEventListener('pointerlockchange',()=>{if(!document.pointerLockElement&&running&&matchMedia('(pointer:fine)').matches)pause();});document.addEventListener('mousemove',e=>{if(running&&document.pointerLockElement===canvas)player.a+=e.movementX*.0025;});canvas.addEventListener('mousedown',e=>{if(e.button!==0||!running)return;fire=true;shoot();if(document.pointerLockElement!==canvas)canvas.requestPointerLock?.()?.catch(()=>{});});window.addEventListener('mouseup',()=>fire=false);canvas.addEventListener('contextmenu',e=>e.preventDefault());canvas.addEventListener('wheel',e=>{if(running){e.preventDefault();choose((weapon+(e.deltaY>0?1:3))%4);}},{passive:false});
 for(let b of document.querySelectorAll('[data-key]')){b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);keys.add(b.dataset.key);});for(let name of ['pointerup','pointercancel'])b.addEventListener(name,()=>keys.delete(b.dataset.key));}$('#touchfire').addEventListener('pointerdown',e=>{e.preventDefault();e.target.setPointerCapture(e.pointerId);fire=true;});for(let name of ['pointerup','pointercancel'])$('#touchfire').addEventListener(name,()=>fire=false);$('#touchswap').addEventListener('click',()=>choose((weapon+1)%4));$('#touchuse').addEventListener('click',interact);let touchX=null;canvas.style.touchAction='none';canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')touchX=e.clientX;});canvas.addEventListener('pointermove',e=>{if(e.pointerType==='touch'&&touchX!==null&&running){player.a+=(e.clientX-touchX)*.009;touchX=e.clientX;}});canvas.addEventListener('pointerup',()=>touchX=null);
 document.querySelectorAll('.weapon-thumb').forEach((c,i)=>{c.getContext('2d').drawImage(WeaponArt.get(i),110,80,530,550,0,0,c.width,c.height);});

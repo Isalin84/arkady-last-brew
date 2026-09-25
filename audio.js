@@ -52,5 +52,6 @@ const GameAudio=(()=>{
  function hit(){sample('steps',{volume:.5,offset:.28,duration:.18,rate:.55});}
  function kill(){sample('can',{volume:.22,rate:.5,offset:.3,duration:.35});}
  function kiss(){sample('kiss',{volume:.9});}
- return{resume,pause,reset,setLevel,monster,vehicle,setEnabled,setVolume,get volumes(){return {...levels};},say,shot,impact,update,hit,kill,kiss,lines,get enabled(){return enabled;},get loaded(){return Object.keys(buffers);}};
+ function voiceSeconds(){return ac?Math.max(0,voiceUntil-ac.currentTime):0;}
+ return{resume,pause,reset,setLevel,monster,vehicle,setEnabled,setVolume,get volumes(){return {...levels};},say,shot,impact,update,hit,kill,kiss,voiceSeconds,lines,get enabled(){return enabled;},get loaded(){return Object.keys(buffers);}};
 })();
