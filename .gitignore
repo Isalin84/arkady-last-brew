@@ -11,3 +11,4 @@ assets/source-private/
 node_modules/
 test-results/
 playwright-report/
+.claude/worktrees/
