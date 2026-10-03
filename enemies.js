@@ -34,7 +34,7 @@ const EnemyAI=(()=>{
  // The boss and its summoned mites are extra: they never count toward kills / levelTotal.
  function kill(e){
   const counted=!e.boss&&!e.add;if(counted)kills++;
-  GameScore.kill(e.type,e.max);GameFX.burst(e.x,e.y,ENEMY_TYPES[e.type].color,25);GameFX.onKill(e);GameAudio.kill();
+  GameScore.kill(e.type,e.max,{counted});GameFX.burst(e.x,e.y,ENEMY_TYPES[e.type].color,25);GameFX.onKill(e);GameAudio.kill();
   if(e.boss){bossDown(e);updateHUD();return;}
   GameAudio.say(e.type===5?'golemkill':LEVELS[levelIndex].dialogue.kill);
   if(counted&&kills===levelTotal&&(!LEVELS[levelIndex].boss||bossDefeated))toast(LEVELS[levelIndex].clear);

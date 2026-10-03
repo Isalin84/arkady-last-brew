@@ -37,7 +37,10 @@ const Renderer=(()=>{
 
  // ---- Textures: canvas → {w,h,px:Uint32Array (ABGR)} with lazily built box-filtered mips. Without ImageData (node tests) a pattern encodes u in red, v in green.
  const texCache=new WeakMap();
- function pixels(c,w,h){try{const d=c.getContext?.('2d')?.getImageData?.(0,0,w,h);if(d&&d.data&&d.data.length===w*h*4)return new Uint32Array(d.data.buffer);}catch{}const px=new Uint32Array(w*h);for(let y=0;y<h;y++)for(let x=0;x<w;x++)px[y*w+x]=0xff000000|(Math.round(y*255/Math.max(1,h-1))<<8)|Math.round(x*255/Math.max(1,w-1));return px;}
+ // Art canvases are read back through one shared willReadFrequently canvas, so their own contexts stay GPU-friendly and Chrome does not warn.
+ let readCanvas=null,readCtx=null;
+ function readback(c,w,h){if(!c.getContext)return null;if(!readCanvas){readCanvas=document.createElement('canvas');readCtx=readCanvas.getContext?.('2d',{willReadFrequently:true});}if(!readCtx?.getImageData)return c.getContext('2d')?.getImageData?.(0,0,w,h);if(readCanvas.width!==w||readCanvas.height!==h){readCanvas.width=w;readCanvas.height=h;}else readCtx.clearRect(0,0,w,h);readCtx.drawImage(c,0,0);return readCtx.getImageData(0,0,w,h);}
+ function pixels(c,w,h){try{const d=readback(c,w,h);if(d&&d.data&&d.data.length===w*h*4)return new Uint32Array(d.data.buffer);}catch{}const px=new Uint32Array(w*h);for(let y=0;y<h;y++)for(let x=0;x<w;x++)px[y*w+x]=0xff000000|(Math.round(y*255/Math.max(1,h-1))<<8)|Math.round(x*255/Math.max(1,w-1));return px;}
  function extract(c,t){const w=c.width||64,h=c.height||64;t.w=w;t.h=h;t.px=pixels(c,w,h);t.mips=[t];return t;}
  function tex(c){let t=texCache.get(c);if(!t){t=extract(c,{});texCache.set(c,t);}return t;}
  function halve(t){const w=t.w>>1,h=t.h>>1,s=t.px,px=new Uint32Array(w*h);for(let y=0;y<h;y++)for(let x=0;x<w;x++){let r=0,g=0,b=0,a=0;for(let k=0;k<4;k++){const p=s[(2*y+(k>>1))*t.w+2*x+(k&1)],pa=p>>>24;a+=pa;r+=(p&255)*pa;g+=(p>>8&255)*pa;b+=(p>>16&255)*pa;}px[y*w+x]=a?((a>>2)<<24|Math.round(b/a)<<16|Math.round(g/a)<<8|Math.round(r/a))>>>0:0;}return {w,h,px};}

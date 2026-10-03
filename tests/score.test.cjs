@@ -14,4 +14,7 @@ console.log('PASS: scoring, checkpoint rollback, death penalty, bonuses and seve
 // Combo math, medals and flat bonuses on the bare score module (no game loaded).
 score.begin();assert.equal(score.kill(0,75),141);assert.equal(score.kill(0,75),282,'Second kill inside 3 s is x2');score.tick(3.1);assert.equal(score.combo.mult,1);assert.equal(score.kill(0,75),141);score.hurt(1);assert.equal(score.combo.mult,1);score.bonus(500);score.secret();assert.equal(score.stats.secrets,1);assert.equal(score.stats.bestCombo,2);
 assert.equal(score.levelResult({level:0,time:90,damage:0,secretsFound:1,secretsTotal:1,par:100}).medal,'gold');assert.equal(score.levelResult({time:101,damage:0,secretsFound:1,secretsTotal:1,par:100}).medal,'silver');assert.equal(score.levelResult({time:500,damage:60,secretsFound:0,secretsTotal:2,par:100}).medal,'bronze');
-console.log('PASS: combo math and medal thresholds');
+// Voluntary restart rolls back like a death but without the penalty; uncounted kills (boss, adds) score without counting.
+score.begin();score.kill(0,75);score.checkpoint();const before=score.current;score.kill(0,75);score.restartLevel();assert.equal(score.stats.deaths,0,'Restart is not a death');assert.equal(score.current,before);assert.equal(score.stats.kills,1);
+assert.equal(score.kill(12,2400,{counted:false})>0,true);assert.equal(score.stats.kills,1,'Boss kill is not counted');assert.equal(score.finish(50).veteranNew,false,'Veteran was already unlocked by an earlier win');
+console.log('PASS: combo math, medal thresholds, restart without death, uncounted kills');

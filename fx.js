@@ -2,7 +2,7 @@
 // Combat feedback: particles, camera shake, hitstop, dynamic lights, wall decals, corpses, weapon poses and muzzle effects.
 const GameFX=(()=>{
  const MAX_DECALS=40,MAX_LIGHTS=8,MAX_PARTICLES=420,MAX_CORPSES=20,CORPSE_TIME=6,DECAL_TIME=24,SHAKE_AMP=14;
- const fx={particles:[],shake:{x:0,y:0},lights:[],decals:[],corpses:[],hitstop:0,hitMarker:0,hitCrit:0,damageDir:null,damageT:0,trauma:0,t:0,gunT:9,throwDur:.5,swap:{t:9,from:0,to:0},muzzleT:0,emit:0,GUN:{x:.65,y:34},MAX_DECALS,MAX_LIGHTS,MAX_PARTICLES,MAX_CORPSES,CORPSE_TIME};
+ const fx={particles:[],shake:{x:0,y:0},lights:[],decals:[],corpses:[],hitstop:0,flash:0,hitMarker:0,hitCrit:0,damageDir:null,damageT:0,trauma:0,t:0,gunT:9,throwDur:.5,swap:{t:9,from:0,to:0},muzzleT:0,emit:0,GUN:{x:.65,y:34},MAX_DECALS,MAX_LIGHTS,MAX_PARTICLES,MAX_CORPSES,CORPSE_TIME};
  // Screen-space particles (smoke puffs, foam spray) in a small ring buffer; drawn over the gun in absolute canvas coordinates.
  const sp=[];let spHead=0;
  const rnd=(a,b)=>a+Math.random()*(b-a);
@@ -12,7 +12,7 @@ const GameFX=(()=>{
  function spawnSp(x,y,vx,vy,r,vr,life,kind){const p=sp[spHead]||(sp[spHead]={});spHead=(spHead+1)%90;p.x=x;p.y=y;p.vx=vx;p.vy=vy;p.r=r;p.vr=vr;p.life=life;p.max=life;p.kind=kind;}
  // Particle burst, signature kept from the original module.
  fx.burst=(x,y,color,n=14)=>{for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,s=Math.random()*1.8;push(x,y,Math.random()*.6,Math.cos(a)*s,Math.sin(a)*s,-.4,color,.35+Math.random()*.3,1,false,0);}};
- fx.reset=()=>{fx.particles=[];fx.lights=[];fx.decals=[];fx.corpses=[];fx.shake.x=fx.shake.y=0;fx.hitstop=0;fx.hitMarker=0;fx.hitCrit=0;fx.damageDir=null;fx.damageT=0;fx.trauma=0;fx.gunT=9;fx.swap.t=9;fx.muzzleT=0;fx.emit=0;for(const p of sp)p.life=0;};
+ fx.reset=()=>{fx.particles=[];fx.lights=[];fx.decals=[];fx.corpses=[];fx.shake.x=fx.shake.y=0;fx.hitstop=0;fx.flash=0;fx.hitMarker=0;fx.hitCrit=0;fx.damageDir=null;fx.damageT=0;fx.trauma=0;fx.gunT=9;fx.swap.t=9;fx.muzzleT=0;fx.emit=0;for(const p of sp)p.life=0;};
  fx.addShake=amount=>{if(shakeOn())fx.trauma=Math.min(1,fx.trauma+amount);};
  fx.addLight=(x,y,radius,intensity,color,life)=>{if(fx.lights.length>=MAX_LIGHTS)fx.lights.shift();fx.lights.push({x,y,radius,intensity,color,life});};
  fx.addDecal=(x,y,v,size,color,alpha=.8)=>{if(fx.decals.length>=MAX_DECALS)fx.decals.shift();fx.decals.push({x,y,v,size,color,alpha,a0:alpha,life:DECAL_TIME});};
@@ -25,7 +25,7 @@ const GameFX=(()=>{
   const D=fx.decals;for(let i=D.length-1;i>=0;i--){const d=D[i];d.life-=dt;d.alpha=d.a0*Math.min(1,d.life/4);if(d.life<=0)D.splice(i,1);}
   const C=fx.corpses;for(let i=C.length-1;i>=0;i--){const c=C[i];c.age+=dt;c.alpha=Math.max(0,1-(c.age/CORPSE_TIME)**2);if(c.age>=CORPSE_TIME)C.splice(i,1);}
   for(const p of sp)if(p.life>0){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.r+=p.vr*dt;}
-  fx.trauma=Math.max(0,fx.trauma-dt*1.8);fx.hitMarker=Math.max(0,fx.hitMarker-dt*6);if(fx.hitMarker===0)fx.hitCrit=0;fx.damageT=Math.max(0,fx.damageT-dt*1.1);
+  fx.trauma=Math.max(0,fx.trauma-dt*1.8);fx.flash=Math.max(0,fx.flash-dt*2.2);fx.hitMarker=Math.max(0,fx.hitMarker-dt*6);if(fx.hitMarker===0)fx.hitCrit=0;fx.damageT=Math.max(0,fx.damageT-dt*1.1);
   if(shakeOn()&&fx.trauma>0){const amp=SHAKE_AMP*fx.trauma**1.5,t=fx.t;fx.shake.x=amp*(Math.sin(t*61)+Math.sin(t*37+1.3))*.5;fx.shake.y=amp*(Math.sin(t*53+2.1)+Math.sin(t*29))*.5;}else{fx.shake.x=fx.shake.y=0;}
  };
  // ---- events ----
@@ -40,9 +40,11 @@ const GameFX=(()=>{
  fx.onKill=enemy=>{
   fx.hitstop=Math.max(fx.hitstop,.04);fx.addShake(.14);
   if(!enemy)return;
+  // The boss gets a heavier beat: long hitstop, full shake, gold screen flash and light.
+  if(enemy.boss){fx.hitstop=Math.max(fx.hitstop,.18);fx.addShake(1);fx.flash=1;fx.addLight(enemy.x,enemy.y,4.5,1.4,[255,214,110],.6);}
   if(fx.corpses.length>=MAX_CORPSES)fx.corpses.shift();
   const t=enemy.type,big=t===6||t===7||t===10;
-  fx.corpses.push({x:enemy.x,y:enemy.y,type:t,img:corpseImage(t),size:big?1.25:t===5?1.15:t===8?.7:.85,aspect:t===6||t===7?1.25:1,z:0,alpha:1,age:0});
+  fx.corpses.push({x:enemy.x,y:enemy.y,type:t,img:corpseImage(t),size:t===12?1.65:big?1.25:t===5?1.15:t===8?.7:.85,aspect:t===12?1.3:t===6||t===7?1.25:1,z:0,alpha:1,age:0});
  };
  fx.onExplode=(x,y)=>{
   fx.hitstop=Math.max(fx.hitstop,.07);const pl=playerNow(),d=pl?Math.hypot(pl.x-x,pl.y-y):0;fx.addShake(Math.max(.15,.6-d*.06));
@@ -167,6 +169,7 @@ const GameFX=(()=>{
   for(const p of sp){if(p.life<=0)continue;const a=Math.max(0,p.life/p.max);
    if(p.kind===0){g.globalAlpha=a*.6;g.fillStyle='#d4cfc2';}else if(p.kind===1){g.globalAlpha=Math.min(1,a*1.6)*.9;g.fillStyle=p.r>9?'#f2e8cc':'#fff8e4';}else{g.globalAlpha=a;g.fillStyle='#ffe08a';}
    g.beginPath();g.arc(p.x,p.y,Math.max(.5,p.r),0,Math.PI*2);g.fill();}
+  if(fx.flash>0&&g.canvas){g.globalAlpha=fx.flash*.42;g.fillStyle='#f1cf5b';g.fillRect(0,0,g.canvas.width,g.canvas.height);}
   g.globalAlpha=1;
  };
  return fx;

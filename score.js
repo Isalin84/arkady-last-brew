@@ -11,11 +11,15 @@ const GameScore=(()=>{
  function begin(difficulty){run=fresh(difficulty);checkpoint={score:0,kills:0,pickups:0,damage:0,shots:0,secrets:0};finalResult=null;resetLevelTracking();return snapshot();}
  function snapshot(){return {...run,medals:[...run.medals]};}
  function checkpointLevel(){checkpoint={score:run.score,kills:run.kills,pickups:run.pickups,damage:run.damage,shots:run.shots,secrets:run.secrets};resetLevelTracking();}
- function retryLevel(){run.deaths++;run.score=checkpoint.score;run.kills=checkpoint.kills;run.pickups=checkpoint.pickups;run.damage=checkpoint.damage;run.shots=checkpoint.shots;run.secrets=checkpoint.secrets;const deaths=levelDeaths+1;resetLevelTracking();levelDeaths=deaths;}
+ // Back to the level-entry checkpoint. A death counts against the run (-250, medal capped); a voluntary restart does not.
+ function rollback(death){if(death)run.deaths++;run.score=checkpoint.score;run.kills=checkpoint.kills;run.pickups=checkpoint.pickups;run.damage=checkpoint.damage;run.shots=checkpoint.shots;run.secrets=checkpoint.secrets;const deaths=levelDeaths+(death?1:0);resetLevelTracking();levelDeaths=deaths;}
+ function retryLevel(){rollback(true);}
+ function restartLevel(){rollback(false);}
  function tick(dt){if(!run)return;const d=Math.max(0,dt);run.seconds+=d;levelSeconds+=d;if(combo.timer>0){combo.timer=Math.max(0,combo.timer-d);if(!combo.timer)combo.mult=1;}}
  function shot(){if(run)run.shots++;}
  // Kills inside the 3 s window chain x1 -> x4; the first kill of a chain is always x1.
- function kill(type,hp){if(!run)return 0;combo.mult=combo.timer>0?Math.min(COMBO_MAX,combo.mult+1):1;combo.timer=COMBO_WINDOW;run.bestCombo=Math.max(run.bestCombo,combo.mult);const gained=(100+Math.round(hp*.55)+(type>=6?125:0))*combo.mult;run.kills++;run.score+=gained;return gained;}
+ // counted:false (boss, summoned mites) still scores and chains the combo but is not a kill toward the level count.
+ function kill(type,hp,{counted=true}={}){if(!run)return 0;combo.mult=combo.timer>0?Math.min(COMBO_MAX,combo.mult+1):1;combo.timer=COMBO_WINDOW;run.bestCombo=Math.max(run.bestCombo,combo.mult);const gained=(100+Math.round(hp*.55)+(type>=6?125:0))*combo.mult;if(counted)run.kills++;run.score+=gained;return gained;}
  function pickup(){if(!run)return;run.pickups++;run.score+=25;}
  // Flat bonus without a kill (gold cap, secret found).
  function bonus(points){if(run)run.score+=Math.max(0,Math.round(points));}
@@ -53,7 +57,7 @@ const GameScore=(()=>{
  function readRecords(){try{const value=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');if(!Array.isArray(value))return[];return value.filter(r=>Number.isFinite(Number(r?.score))).map(r=>({id:String(r.id||''),score:Math.max(0,Math.round(Number(r.score))),date:String(r.date||''),time:Math.max(0,Math.round(Number(r.time)||0)),health:Math.max(0,Math.min(100,Math.round(Number(r.health)||0))),kills:Math.max(0,Math.round(Number(r.kills)||0)),deaths:Math.max(0,Math.round(Number(r.deaths)||0)),difficulty:DIFFICULTIES.includes(r.difficulty)?r.difficulty:'normal',medals:cleanMedals(r.medals),bestCombo:Math.max(1,Math.min(COMBO_MAX,Math.round(Number(r.bestCombo)||1))),secrets:Math.max(0,Math.round(Number(r.secrets)||0))})).slice(0,MAX_RECORDS);}catch{return [];}}
  function writeRecords(records){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(records));}catch{}}
  function finish(health){
-  if(finalResult)return finalResult;
+  if(finalResult)return finalResult;const veteranNew=!veteranUnlocked();
   const healthBonus=Math.max(0,Math.round(health))*12;
   const timeBonus=Math.max(0,4000-Math.round(run.seconds*4));
   const clearBonus=2000;
@@ -62,8 +66,8 @@ const GameScore=(()=>{
   const record={id,score:current(),date:new Date().toISOString(),time:Math.round(run.seconds),health:Math.max(0,Math.round(health)),kills:run.kills,deaths:run.deaths,difficulty:run.difficulty,medals:[...run.medals],bestCombo:run.bestCombo,secrets:run.secrets};
   const records=[...readRecords(),record].sort((a,b)=>b.score-a.score||a.time-b.time).slice(0,MAX_RECORDS);
   writeRecords(records);try{localStorage.setItem(VETERAN_KEY,'1');}catch{}
-  finalResult={...record,healthBonus,timeBonus,clearBonus,records,rank:records.findIndex(r=>r.id===id)+1};return finalResult;
+  finalResult={...record,healthBonus,timeBonus,clearBonus,veteranNew,scoreMul:scoreMul(),records,rank:records.findIndex(r=>r.id===id)+1};return finalResult;
  }
  begin();
- return{begin,checkpoint:checkpointLevel,retryLevel,tick,shot,kill,pickup,bonus,secret,hurt,finish,finishLevel,levelResult,medalLine,bestMedals,veteranUnlocked,records:readRecords,formatTime,difficultyLabel:d=>DIFFICULTY_LABEL[d]||DIFFICULTY_LABEL.normal,difficultyBadge:d=>DIFFICULTY_BADGE[d]||'',COMBO_WINDOW,COMBO_MAX,get combo(){return {mult:combo.mult,timer:combo.timer};},get current(){return current();},get stats(){return snapshot();}};
+ return{begin,checkpoint:checkpointLevel,retryLevel,restartLevel,tick,shot,kill,pickup,bonus,secret,hurt,finish,finishLevel,levelResult,medalLine,medalStars:m=>MEDAL_STARS[m]||'☆☆☆',bestMedals,veteranUnlocked,records:readRecords,formatTime,difficultyLabel:d=>DIFFICULTY_LABEL[d]||DIFFICULTY_LABEL.normal,difficultyBadge:d=>DIFFICULTY_BADGE[d]||'',COMBO_WINDOW,COMBO_MAX,get combo(){return {mult:combo.mult,timer:combo.timer};},get current(){return current();},get stats(){return snapshot();}};
 })();

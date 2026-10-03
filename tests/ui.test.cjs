@@ -172,6 +172,7 @@ const run=(env,code)=>vm.runInContext(code,env.sandbox);
  e.setNow(5000);run(e,"GameUI.pausePanel(true)");
  assert.equal(e.$('#pause-panel').hidden,false);assert.equal(e.$('#pause-panel').getAttribute('data-mode'),'pause');assert.equal(e.$('#resume').focused>0,true,'focus moves to Continue');
  assert.ok(e.$('#pause-meta').innerHTML.includes('зачищено 0 из 12'));
+ e.$('#status').textContent='Открой аварийный люк · E';run(e,"GameUI.pausePanel(true)");assert.ok(e.$('#pause-meta').innerHTML.includes('Открой аварийный люк'),'pause meta shows the objective');
  assert.equal(run(e,"GameUI.escape()"),true);assert.equal(e.sandbox.startCalls,0,'Esc right after pausing does not resume');
  e.setNow(5600);run(e,"GameUI.escape()");assert.equal(e.sandbox.startCalls,1,'Esc resumes the shift');
  e.$('#resume').dispatch('click');assert.equal(e.sandbox.startCalls,2);
@@ -186,6 +187,8 @@ const run=(env,code)=>vm.runInContext(code,env.sandbox);
  e.setNow(8000);assert.equal(run(e,"GameUI.restartClick()"),false);assert.equal(e.sandbox.restarts,0);assert.ok(e.$('#restart-level').classes.has('confirm'));
  e.setNow(8500);assert.equal(run(e,"GameUI.restartClick()"),true);assert.equal(e.sandbox.restarts,1);
  e.setNow(9000);run(e,"GameUI.restartClick()");e.setNow(13000);run(e,"GameUI.frame(.016)");assert.ok(!e.$('#restart-level').classes.has('confirm'),'confirmation expires');
+ assert.ok(e.$('#restart-level').textContent==='Заново этот цех');e.setNow(14000);run(e,"GameUI.restartClick()");assert.ok(e.$('#restart-level').textContent.includes('Прогресс цеха сбросится'));
+ run(e,"var diffKey='veteran'");e.setNow(20000);run(e,"GameUI.frame(.016);GameUI.restartClick()");assert.ok(e.$('#restart-level').textContent.includes('Смена начнётся с первого цеха'),'veteran restart warns about the whole run');
 }
 
 // ---- virtual joystick ----

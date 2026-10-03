@@ -68,7 +68,7 @@ const GameAudio=(()=>{
   stagger:(o,t)=>{tone(o,'sine',430,170,t,.14,.4,.002);hiss(o,'bandpass',900,400,4,t,.09,.25);}
  };
  function synth(name,{pan=0,volume=1,distance=0}={}){
-  if(!ac||!enabled||!active||!voices[name])return false;const now=ac.currentTime;
+  if(!ac||!enabled||!voices[name])return false;const now=ac.currentTime;
   if(now-(synthAt[name]??-1)<(SYNTH_GAP[name]??.03))return false;synthAt[name]=now;
   const out=ac.createGain();out.gain.value=.8*Math.max(0,volume)/(1+Math.max(0,distance)*.18);
   if(ac.createStereoPanner){const p=ac.createStereoPanner();p.pan.value=Math.max(-1,Math.min(1,pan));out.connect(p);p.connect(effects);}else out.connect(effects);

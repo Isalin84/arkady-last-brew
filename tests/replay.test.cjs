@@ -90,7 +90,7 @@ GameScore.checkpoint();for(let i=0;i<200;i++)GameScore.tick(1);GameScore.finishL
 assert.ok(JSON.parse(localStorage.getItem('arkady-medals-v1')).normal);
 // Shown on the transition overlay.
 loadLevel(0);running=true;GameScore.begin();GameScore.checkpoint();GameScore.tick(60);kills=levelTotal;enemies=[];player.x=LEVELS[0].exit[0];player.y=LEVELS[0].exit[1];tick(.01);assert.equal(transition,true);
-assert.ok($('.intro p').innerHTML.includes('Медаль цеха: ★'),'Medal line on the transition overlay');assert.ok($('.intro p').innerHTML.includes('пар 2:00'));assert.ok($('.intro p').innerHTML.includes('Припасы пополнены'));
+assert.ok($('.intro .medal-line').innerHTML.includes('Медаль цеха: <span class="stars">★'),'Medal line on the transition overlay');assert.ok($('.intro .medal-line').innerHTML.includes('пар 2:00'));assert.equal($('.intro .medal-line').hidden,false);assert.ok(!$('.intro p').innerHTML.includes('Медаль'),'Medal has its own element');assert.ok($('.intro p').innerHTML.includes('Припасы пополнены'));
 
 // --- Difficulty ---
 function startRun(key){GameSettings.set('difficulty',key);reset();running=true;}
@@ -112,6 +112,16 @@ start();assert.equal(levelIndex,0,'Veteran death restarts from level 1');assert.
 // Other difficulties still retry only the current level.
 GameSettings.set('difficulty','rookie');reset();running=true;loadLevel(2);GameScore.checkpoint();hurtPlayer(5000);assert.equal(dead,true);assert.equal(runFailed,false);assert.ok($('.intro h1').innerHTML.includes('ПРОПАЛА'));start();assert.equal(levelIndex,2);assert.equal(GameScore.stats.deaths,1);
 GameSettings.set('difficulty','normal');
+// --- «Заново этот цех»: a checkpoint reload, not a death; veteran restarts the run; the run's difficulty wins over the stored setting ---
+GameSettings.set('difficulty','normal');reset();running=true;started=true;loadLevel(1);GameScore.checkpoint();const killsAtEntry=GameScore.stats.kills;GameScore.kill(0,75);kills=1;player.hp=30;pause();restartLevel();
+assert.equal(levelIndex,1,'Restart keeps the level');assert.equal(running,true);assert.equal(GameScore.stats.deaths,0,'Restart is not a death');assert.equal(GameScore.stats.kills,killsAtEntry,'Restart rolls kills back');assert.equal(kills,0);assert.equal($('#status').textContent,LEVELS[1].status);
+GameSettings.set('difficulty','veteran');pause();restartLevel();assert.equal(levelIndex,1,'Stored setting does not turn a normal run into veteran');assert.equal(diffKey,'normal');
+GameSettings.set('difficulty','veteran');reset();assert.equal(diffKey,'veteran');running=true;started=true;loadLevel(2);GameScore.checkpoint();pause();restartLevel();assert.equal(levelIndex,0,'Veteran restart begins the whole run again');assert.equal(GameScore.stats.deaths,0);assert.equal(running,true);
+GameSettings.set('difficulty','normal');
+// --- Esc -> resume keeps an objective written during play ---
+reset();start();$('#status').textContent='В силосе кто-то заперт.';pause();start();assert.equal($('#status').textContent,'В силосе кто-то заперт.','Resume keeps the current objective');
+// --- Boss and summoned mites score but are not kills ---
+reset();running=true;GameScore.begin();const k0=GameScore.stats.kills,s0=GameScore.current;GameScore.kill(12,2400,{counted:false});GameScore.kill(8,40,{counted:false});assert.equal(GameScore.stats.kills,k0);assert.ok(GameScore.current>s0);
 
 // --- Final result carries difficulty, medals and best combo; veteran unlocks after a win ---
 assert.equal(GameScore.veteranUnlocked(),false);

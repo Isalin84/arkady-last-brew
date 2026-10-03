@@ -1,11 +1,15 @@
 const vm=require('node:vm'),assert=require('node:assert/strict'),fs=require('node:fs');
 const played=[],nodes=[],timers=new Map();let timer=0;
-const param=()=>({value:0,setTargetAtTime(v){this.value=v},setValueAtTime(v){this.value=v},linearRampToValueAtTime(v){this.value=v}});
+const param=()=>({value:0,setTargetAtTime(v){this.value=v},setValueAtTime(v){this.value=v},linearRampToValueAtTime(v){this.value=v},exponentialRampToValueAtTime(v){this.value=v}});
 class AudioContext{
  constructor(){this.currentTime=0;this.destination={};AudioContext.instance=this;}
  createGain(){return{gain:param(),connect(){}}}
  createStereoPanner(){return{pan:param(),connect(){}}}
  createBufferSource(){const s={playbackRate:param(),connect(){},start(...args){played.push({node:this,args});},stop(){this.stopped=true;this.onended?.()}};nodes.push(s);return s;}
+ createOscillator(){const o={frequency:param(),connect(){},start(){},stop(){this.stopped=true;}};nodes.push(o);return o;}
+ createBiquadFilter(){return{frequency:param(),Q:param(),connect(){}}}
+ createBuffer(c,n){return{getChannelData:()=>new Float32Array(n)}}
+ get sampleRate(){return 8000}
  async resume(){}
  async decodeAudioData(data){return{duration:2,data}}
 }
@@ -24,5 +28,7 @@ vm.createContext(sandbox);for(const file of ['audio-manifest.js','audio.js'])vm.
  assert.ok(!api.lines.filter(line=>Number(line.file.slice(0,2))<44).some(line=>/Нин[аы]|Стелл/.test(line.text)),'Rescue identity stays secret before level four');
  api.vehicle('warn',1,0);const warns=played.length;api.vehicle('warn',1,0);assert.equal(played.length,warns,'Vehicle warning rate limit');AudioContext.instance.currentTime+=1;api.vehicle('charge',1,0);assert.equal(played.length,warns+1);api.vehicle('crash',1,0);assert.equal(played.length,warns+2);api.pause();const paused=played.length;api.vehicle('warn');assert.equal(played.length,paused);assert.ok(nodes.every(n=>n.stopped),'Pause stops vehicle sounds too');
  api.reset();api.setLevel(3);await api.resume();api.update(14,true,false);assert.ok(/Солод любит|Нория|Запах солода/.test(el.textContent),'Malt house walking dialogue');api.pause();await api.resume();assert.equal(api.say('stellathanks',true),true);assert.ok(el.textContent.startsWith('Стелла:'),'Stella has her own subtitle speaker');const beforeKiss=played.length;api.kiss();assert.equal(played.length,beforeKiss+1,'Finale kiss uses its own effect');
+ // UI one-shots (upgrade jingle) play on overlays while the game is paused, but stay silent when muted.
+ api.pause();AudioContext.instance.currentTime+=5;assert.equal(api.synth('upgrade'),true,'Synth works while paused');api.setEnabled(false);AudioContext.instance.currentTime+=5;assert.equal(api.synth('upgrade'),false,'Muted synth is silent');api.setEnabled(true);
  console.log('PASS: explicit voice manifest, lazy chapter loading, four-level dialogue, Stella speaker and kiss, scheduling, pause and mute');
 })().catch(e=>{console.error(e);process.exitCode=1});

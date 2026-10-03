@@ -46,7 +46,9 @@ const GameUI=(()=>{
   $('#show-results').hidden=!finale;if(!finale)$('#score-panel').hidden=true;refreshDifficulty();
  }
  async function prepareFinalScore(result){
-  $('#final-score').textContent=result.score;$('#score-breakdown').textContent=`Зачистка +${result.clearBonus} · здоровье +${result.healthBonus} · скорость +${result.timeBonus}`;
+  const mul=Number(result.scoreMul)||1,medals=Array.isArray(result.medals)?result.medals:[];
+  $('#final-score').textContent=result.score;$('#score-breakdown').textContent=`Зачистка +${result.clearBonus} · здоровье +${result.healthBonus} · скорость +${result.timeBonus}`+(mul!==1?` · ×${mul} ${GameScore.difficultyLabel?.(result.difficulty)||''}`.trimEnd():'');
+  const medalRow=$('#score-medals');if(medalRow){medalRow.hidden=!medals.length;medalRow.innerHTML=medals.map((m,i)=>`<span class="sm-level${m?' '+m:''}" title="Цех ${i+1}"><small>${i+1}</small>${esc(GameScore.medalStars?.(m)||'☆☆☆')}</span>`).join('');}
   $('#score-records').innerHTML=result.records.map((record,index)=>`<tr class="${record.id===result.id?'current':''}"><td>${index+1}</td><td>${record.score}${GameScore.difficultyBadge?.(record.difficulty)?` <span class="diff-badge">${GameScore.difficultyBadge(record.difficulty)}</span>`:''}</td><td>${GameScore.formatTime(record.time)}</td><td>${record.health}%</td></tr>`).join('');
   $('#score-card-preview').removeAttribute('src');$('#score-card-preview').alt='Создаётся карточка результата';
   try{const card=await ScoreCard.create(result);$('#score-card-preview').src=card.url;$('#score-card-preview').alt=`Карточка результата: ${result.score} очков`;}catch(err){console.warn('Score card unavailable:',err.message);}
@@ -140,12 +142,13 @@ const GameUI=(()=>{
  }
  function updatePauseMeta(){
   const level=typeof LEVELS!=='undefined'&&typeof levelIndex==='number'?LEVELS[levelIndex]:null;
-  const line='зачищено '+kills+' из '+levelTotal+' · '+Math.round(GameScore.current)+' очков';
-  if($('#pause-meta')._v!==line+level?.name){$('#pause-meta')._v=line+level?.name;$('#pause-meta').innerHTML=(level?'<b>'+esc(level.name)+'</b>':'')+esc(line);}
+  const line='зачищено '+kills+' из '+levelTotal+' · '+Math.round(GameScore.current)+' очков',goal=$('#status')?.textContent||'',key=line+level?.name+goal;
+  // The objective repeats here: on phones in landscape the .topline with #status is hidden.
+  if($('#pause-meta')._v!==key){$('#pause-meta')._v=key;$('#pause-meta').innerHTML=(level?'<b>'+esc(level.name)+'</b>':'')+esc(line)+(goal?'<span class="pp-goal">'+esc(goal)+'</span>':'');}
  }
  function resetRestartConfirm(){if(!confirmUntil)return;confirmUntil=0;const b=$('#restart-level');b.classList.remove('confirm');b.textContent='Заново этот цех';}
  function restartClick(){
-  if(performance.now()>confirmUntil){const b=$('#restart-level');b.classList.add('confirm');b.textContent='Точно? Прогресс цеха сбросится';confirmUntil=performance.now()+3500;return false;}
+  if(performance.now()>confirmUntil){const b=$('#restart-level'),veteran=typeof diffKey!=='undefined'&&diffKey==='veteran';b.classList.add('confirm');b.textContent='Точно? '+(veteran?'Смена начнётся с первого цеха':'Прогресс цеха сбросится');confirmUntil=performance.now()+3500;return false;}
   resetRestartConfirm();if(typeof restartLevel==='function')restartLevel();return true;
  }
  // Esc / blur handling for game.js: returns true if the key was consumed by the panel.
