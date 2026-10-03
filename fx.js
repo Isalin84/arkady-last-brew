@@ -103,9 +103,11 @@ const GameFX=(()=>{
  // Thrown bottles and cans spin: pre-rotated copies of the sprite chosen by shot age.
  const NEAR=.9,SPIN=8,spinCache={},spinList=[],flat=[],spinPool=[];
  function spinFrames(type){
-  if(spinCache[type])return spinCache[type];
-  const src=typeof Renderer!=='undefined'?Renderer.sprites?.[type]:null;if(!src)return null;
-  const frames=[];for(let i=0;i<SPIN;i++){const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');g.translate(64,64);g.rotate(i*Math.PI*2/SPIN);g.drawImage(src,-64,-64);frames.push(c);}
+  // The painted HUD icon is preferred; Canvas-art frames are rebuilt once the icon arrives.
+  const icon=typeof WeaponArt!=='undefined'?WeaponArt.icon?.(type==='can'?1:0):null;
+  if(spinCache[type]&&(spinCache[type].painted||!icon))return spinCache[type];
+  const src=icon||(typeof Renderer!=='undefined'?Renderer.sprites?.[type]:null);if(!src)return null;
+  const frames=[];frames.painted=!!icon;for(let i=0;i<SPIN;i++){const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');g.translate(64,64);g.rotate(i*Math.PI*2/SPIN);g.drawImage(src,-64,-64,128,128);frames.push(c);}
   return spinCache[type]=frames;
  }
  // Splits shots into spinning billboards (bottle, can) and plain ones (cork, foam); call before sprites() each frame.

@@ -263,7 +263,7 @@ const Renderer=(()=>{
    s.isEnemy=true;s.hit=e.hit||0;s.stagger=e.stagger||0;s.dying=e.dying||0;s.seed=e.seed||0;
   }
   if(stellaVisible&&levelIndex===3&&level&&level.stella)add(stellaSprite,level.stella[0],level.stella[1],1.12,Math.sin(clock*2)*.008,1,null);
-  for(const i of items)add(sprites[i.type],i.x,i.y,.52,0,1,null);
+  for(const i of items)add(SceneArt.item?.(i.type)||sprites[i.type],i.x,i.y,.52,0,1,null);
   for(const s of shots)add(sprites[s.type],s.x,s.y,s.type==='foam'?.2:.24,.35+Math.sin(Math.min(1,s.age||0)*Math.PI)*.2,1,null);
   for(const e of V.extra||[]){if(!e||!e.img)continue;const s=add(e.img,e.x,e.y,e.size,e.z,e.aspect,e.enemy||null);s.hit=e.hit||0;s.flash=e.flash||0;s.alpha=e.alpha??1;s.fullbright=!!e.fullbright;s.isEnemy=!!e.enemy;}
   for(const p of puffs){const t=p.age/p.life,s=add(null,p.x,p.y,(.3+t*.55)*p.big,p.z-(.3+t*.55)*p.big*.5,1,null);s.t=puffTex;s.blend=1;s.alpha=Math.min(1,p.age*2.5)*(1-t)*.6;}
@@ -276,7 +276,8 @@ const Renderer=(()=>{
  function project(x,y){proj(x,y);return {d:PD,x:PX};}
  function drawBill(s,rects){
   proj(s.x,s.y);const d=PD;if(d<.15)return;
-  let h=VIEW/d*s.size,w=h*s.aspect,left=PX-w/2,top=VIEW/2+VIEW/d*.5-h-s.z*VIEW/d;
+  // Sprite art stands on a line at 94% of its frame, so the frame dips that last 6% below the floor point.
+  let h=VIEW/d*s.size,w=h*s.aspect,left=PX-w/2,top=VIEW/2+VIEW/d*.5-h*.94-s.z*VIEW/d;
   if(left>W||left+w<0)return;
   if(s.enemy&&s.enemy.hp>0&&rects){const c=Math.floor(PX);rects.push({x:PX,top,w,h,d,visible:PX>=0&&PX<W&&d<depth[c],enemy:s.enemy});}
   if(s.dying>0){const k=Math.min(1,s.dying),h2=h*(1-.7*k);top+=h-h2;h=h2;const w2=w*(1+.35*k);left-=(w2-w)/2;w=w2;}

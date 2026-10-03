@@ -174,19 +174,28 @@ const SceneArt=(()=>{
  const maltDoor=art('malt-door',g=>{
  box(g,0,0,128,128,'#1c313a');for(let x=8;x<128;x+=12)box(g,x,5,3,120,'#506972');box(g,7,6,114,5,'#d8b349');label(g,'СОЛОДОВНЯ',64,47,110);label(g,'СИЛОС 04',64,67,96);g.fillStyle='#ecd78c';g.font='bold 32px monospace';g.textAlign='center';g.fillText('→',64,105);
  });
- // ---- painted sprites (assets/art/monster-*.webp) ----
- // Each file loads on first request or SceneArt.preload into its own canvas; until then callers get the Canvas art above.
- const SLUG=['yeast','foam-mold','sour','can-imp','bottle-biter','pallet-golem','forklift','reach-truck','malt-tick','dust-ghost','clump-guard','spitter','malt-king'];
- const FRAMES={11:['a','b','spit'],12:['a','b','slam','rage-a','rage-b','rage-slam']},MODES={hunt:'hunt',windup:'charge',charge:'charge',recover:'recover'},paintedCache={};
- const frameName=(type,frame)=>type===6||type===7?MODES[frame]||'hunt':(FRAMES[type]||['a','b'])[frame];
- function painted(type,frame=0){
-  const name=frameName(type,frame);if(!name||!SLUG[type])return null;const file=`monster-${SLUG[type]}-${name}`;
+ // ---- painted sprites (assets/art/monster-*.webp, prop-*.webp, item-*.webp) ----
+ // Each file loads on first request or preload into its own canvas; until then callers get the Canvas art above.
+ const paintedCache={};
+ function load(file){
   let p=paintedCache[file];
-  if(!p){p=paintedCache[file]={c:null};if(typeof Image!=='undefined'){const im=new Image();im.decoding='async';im.onload=()=>{const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;c.getContext('2d').drawImage(im,0,0);p.c=c;};im.src=`assets/art/${file}.webp`;}}
-  return p.c;
+  if(!p){p=paintedCache[file]={c:null,wait:[]};if(typeof Image!=='undefined'){const im=new Image();im.decoding='async';im.onload=()=>{const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;c.getContext('2d').drawImage(im,0,0);p.c=c;for(const fn of p.wait)fn(c);p.wait=null;};im.src=`assets/art/${file}.webp`;}}
+  return p;
  }
+ const SLUG=['yeast','foam-mold','sour','can-imp','bottle-biter','pallet-golem','forklift','reach-truck','malt-tick','dust-ghost','clump-guard','spitter','malt-king'];
+ const FRAMES={11:['a','b','spit'],12:['a','b','slam','rage-a','rage-b','rage-slam']},MODES={hunt:'hunt',windup:'charge',charge:'charge',recover:'recover'};
+ const frameName=(type,frame)=>type===6||type===7?MODES[frame]||'hunt':(FRAMES[type]||['a','b'])[frame];
+ function painted(type,frame=0){const name=frameName(type,frame);return name&&SLUG[type]?load(`monster-${SLUG[type]}-${name}`).c:null;}
  function preload(types){for(const t of types){if(t===6||t===7)for(const m of ['hunt','charge','recover'])painted(t,m);else (FRAMES[t]||['a','b']).forEach((_,f)=>painted(t,f));}}
- return{prop,monster:(type,frame=0)=>painted(type,frame)||monster(type,frame),forklift:(type,mode='hunt',frame=0)=>painted(type,mode)||forklift(type,mode,frame),painted,preload,wall,packWall,rack,warehouseWall,maltWall,siloWall,maltDoor};
+ // Props: [file, animated] — animated props alternate -a/-b, control panels show -off/-on by their active frame.
+ const PROPS={tank:['tank'],kettle:['kettle'],filter:['filter'],keg:['keg'],bottles:['bottle-line',1],cans:['can-line',1],filler:['filler',1],seamer:['seamer',1],radio:['radio',1],pallet:['pallet'],maltSilo:['malt-silo'],bucket:['bucket-elevator',1],maltBags:['malt-bags'],aspiration:['aspiration',2],screw:['screw',2],hatch:['hatch',2]};
+ const propFile=(type,frame)=>{const d=PROPS[type];return d&&'prop-'+d[0]+(d[1]===1?(frame?'-b':'-a'):d[1]===2?(frame?'-on':'-off'):'');};
+ function paintedProp(type,frame=0){const f=propFile(type,frame);return f?load(f).c:null;}
+ const item=kind=>['health','ammo','gold','mark'].includes(kind)?load('item-'+kind).c:null;
+ function preloadProps(types){for(const t of types){paintedProp(t,0);paintedProp(t,1);}for(const k of ['health','ammo','gold','mark'])item(k);}
+ // Repaints a Canvas-art canvas in place with item-<kind>.webp once it loads, for sprites whose canvas is held long-term.
+ function paintOver(c,kind){const p=load('item-'+kind),put=src=>{c.width=src.width;c.height=src.height;c.getContext('2d').drawImage(src,0,0);if(typeof Renderer!=='undefined')Renderer.invalidate?.(c);};if(p.c)put(p.c);else p.wait?.push(put);return c;}
+ return{prop:(type,frame=0)=>paintedProp(type,frame)||prop(type,frame),item,paintOver,preloadProps,monster:(type,frame=0)=>painted(type,frame)||monster(type,frame),forklift:(type,mode='hunt',frame=0)=>painted(type,mode)||forklift(type,mode,frame),painted,preload,wall,packWall,rack,warehouseWall,maltWall,siloWall,maltDoor};
 })();
 // Floor and ceiling surfaces per hall: 128px canvases tiled once per map cell; the renderer picks a variant per cell.
 (()=>{

@@ -6,7 +6,7 @@ let player,enemies,items,shots=[],running=false,started=false,won=false,dead=fal
 const keys=new Set();
 let runUpgrades=[],gunStep=0;
 function loadLevel(index,restore=false){
- finaleSequence++;finalResult=null;GameAudio.reset();setFinaleCover(false);storyHeard=false;storyTimer=0;rescueStage=0;stellaVisible=false;$('#radio-message').hidden=true;levelIndex=index;const level=LEVELS[index];SceneArt.preload?.(new Set([...level.enemies.map(e=>e[2]),...(level.boss?[level.boss.type,8]:[])]));map=level.map.map(r=>r.split('').map(Number));
+ finaleSequence++;finalResult=null;GameAudio.reset();setFinaleCover(false);storyHeard=false;storyTimer=0;rescueStage=0;stellaVisible=false;$('#radio-message').hidden=true;levelIndex=index;const level=LEVELS[index];SceneArt.preload?.(new Set([...level.enemies.map(e=>e[2]),...(level.boss?[level.boss.type,8]:[])]));SceneArt.preloadProps?.(new Set(level.props.map(p=>p[2])));map=level.map.map(r=>r.split('').map(Number));
  props=level.props.map(([x,y,type,size,r])=>({x,y,type,size,r,active:false}));
  const [x,y,a]=level.spawn;player={x,y,a,hp:restore&&checkpoint?checkpoint.hp:100};
  enemies=level.enemies.map(([x,y,type],i)=>({x,y,type,hp:Math.round(ENEMY_TYPES[type].hp*diffRules.enemyHp),max:Math.round(ENEMY_TYPES[type].hp*diffRules.enemyHp),attack:0,hit:0,seed:i*3.1,alert:false,mode:'hunt',phase:0,chargeCooldown:1.5,heading:Math.PI}));levelTotal=enemies.length;
@@ -88,7 +88,7 @@ const rescueSteps=[
 // Replayability: difficulty rules, combo toast, secret walls (opened with E), their marks and gold caps (billboards appended to frameView().extra).
 let diffKey='normal',diffRules=DIFFICULTY.normal,runFailed=false,comboSeen=1,secretWalls=new Set(),secretsOpened=[],secretsFound=0,secretsTotal=0,stashGold=[],secretBills=[];const stashArtCache={};
 function comboWatch(){const m=GameScore.combo?.mult||1;if(m>comboSeen&&kills<levelTotal){toast('Комбо ×'+m+'!');GameAudio.synth?.('combo');}comboSeen=m;}
-function stashArt(kind){return stashArtCache[kind]||(stashArtCache[kind]=drawStashArt(kind));}
+function stashArt(kind){return stashArtCache[kind]||(stashArtCache[kind]=SceneArt.paintOver?.(drawStashArt(kind),kind)||drawStashArt(kind));}
 function drawStashArt(kind){
  const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');g.lineWidth=4;g.strokeStyle='#25362d';
  const disc=(x,y,r,fill,stroke)=>{g.fillStyle=fill;g.beginPath();g.arc(x,y,r,0,7);g.fill();if(stroke)g.stroke();};

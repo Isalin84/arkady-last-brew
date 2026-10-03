@@ -32,9 +32,9 @@ const vm=require('node:vm'),requested=[];
 const any=new Proxy(function(){},{get:(t,k)=>k===Symbol.toPrimitive?()=>0:any,apply:()=>any,set:()=>true});// absorbs every Canvas call made while the art modules load
 const sandbox={console,document:{createElement:()=>({getContext:()=>any})},Image:class{set src(v){requested.push(v);}addEventListener(){}}};vm.createContext(sandbox);
 for(const file of ['weapons-art.js','scene-art.js'])vm.runInContext(readFileSync(file,'utf8')+';this.SceneArt=typeof SceneArt!=="undefined"?SceneArt:undefined;',sandbox);
-sandbox.SceneArt.preload([0,1,2,3,4,5,6,7,8,9,10,11,12]);
+sandbox.SceneArt.preload([0,1,2,3,4,5,6,7,8,9,10,11,12]);sandbox.SceneArt.preloadProps(['tank','kettle','filter','keg','bottles','cans','filler','seamer','radio','pallet','maltSilo','bucket','maltBags','aspiration','screw','hatch']);
 const art=new Set(execFileSync('git',['ls-files','assets/art'],{encoding:'utf8'}).split('\n').filter(Boolean));
 assert.ok(lines.includes('cp assets/art/*.webp _site/assets/art/'),'pages.yml copies assets/art/*.webp');
-assert.ok(requested.length===42,'painted sprites requested: '+requested.length);
+assert.ok(requested.length===71,'painted sprites requested: '+requested.length);
 for(const file of requested)assert.ok(/^assets\/art\/[^/]+\.webp$/.test(file)&&art.has(file),'painted sprite is not in Git or outside assets/art: '+file);
 console.log('PASS: '+scripts.length+' page scripts checked and deployed, '+tests.length+' node tests run in Pages workflow, '+tracks.length*exts.length+' music files tracked and deployed, '+requested.length+' painted sprites tracked');
