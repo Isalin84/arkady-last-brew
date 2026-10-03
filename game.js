@@ -24,7 +24,7 @@ function updateHUD(){GameUI.updateHUD();}
 function setFinaleCover(finale){GameUI.setFinaleCover(finale);}
 function prepareFinalScore(result){return GameUI.prepareFinalScore(result);}
 function revealFinalScore(){GameUI.revealFinalScore();}
-function damage(e,d){EnemyAI.damage(e,d);}
+function damage(e,d,src){EnemyAI.damage(e,d,src);}
 function choose(i){weapon=i;kick=.18;updateHUD();if(running)toast(weapons[i].name);}
 function start(){
  const fresh=!started||dead||won||transition;let event='start';
@@ -73,6 +73,7 @@ function interact(){
  if(!running||levelIndex!==3)return;
  if(stellaVisible){const [sx,sy]=LEVELS[3].stella;if(Math.hypot(player.x-sx,player.y-sy)<1.35)finish(true);else toast('Стелла у открытого люка. Подойди к ней.');return;}
  if(kills<levelTotal){toast('Сначала очисти солодовню: '+kills+' / '+levelTotal);return;}
+ if(!bossDefeated){toast('Сначала Солодовый король!');return;}
  const stepInfo=rescueSteps[rescueStage];if(!stepInfo)return;
  const panel=props.find(p=>p.type===stepInfo.type);
  if(!panel||Math.hypot(player.x-panel.x,player.y-panel.y)>1.35){toast(stepInfo.hint+' · E');return;}
