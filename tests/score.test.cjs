@@ -11,3 +11,7 @@ assert.equal(score.finish(1).id,result.id,'Finalization is idempotent');assert.e
 for(let i=0;i<9;i++){score.begin();score.kill(i%3,50+i*10);score.tick(20+i);score.finish(100-i);}
 const records=score.records();assert.equal(records.length,7);assert.equal(records.map(r=>r.score).join(','),Array.from(records,r=>r.score).sort((a,b)=>b-a).join(','));
 console.log('PASS: scoring, checkpoint rollback, death penalty, bonuses and seven local records');
+// Combo math, medals and flat bonuses on the bare score module (no game loaded).
+score.begin();assert.equal(score.kill(0,75),141);assert.equal(score.kill(0,75),282,'Second kill inside 3 s is x2');score.tick(3.1);assert.equal(score.combo.mult,1);assert.equal(score.kill(0,75),141);score.hurt(1);assert.equal(score.combo.mult,1);score.bonus(500);score.secret();assert.equal(score.stats.secrets,1);assert.equal(score.stats.bestCombo,2);
+assert.equal(score.levelResult({level:0,time:90,damage:0,secretsFound:1,secretsTotal:1,par:100}).medal,'gold');assert.equal(score.levelResult({time:101,damage:0,secretsFound:1,secretsTotal:1,par:100}).medal,'silver');assert.equal(score.levelResult({time:500,damage:60,secretsFound:0,secretsTotal:2,par:100}).medal,'bronze');
+console.log('PASS: combo math and medal thresholds');

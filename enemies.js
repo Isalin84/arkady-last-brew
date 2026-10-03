@@ -29,7 +29,7 @@ const EnemyAI=(()=>{
   if(e.boss||charging)return;
   // Heavy hits (30% of max HP) and can blasts always stagger; corks only interrupt small creatures, with a short poise window against stun-lock.
   const small=ENEMY_TYPES[e.type].hp<=110,cork=kind==='cork'&&small&&!(e.poise>0),t=d>=e.max*.3?.55:kind==='can'?.45:cork?.28:0;
-  if(t>0){if(!(e.stagger>0))sfx('stagger',e.x,e.y,.8);e.stagger=Math.max(e.stagger||0,t);e.attack=Math.max(e.attack||0,.35);if(cork)e.poise=.75;if(e.mode==='spit'||e.mode==='windup'){e.mode='hunt';e.frame=undefined;e.cool=Math.max(e.cool||0,.8);}}
+  if(t>0){if(!(e.stagger>0))sfx('stagger',e.x,e.y,.8);e.stagger=Math.max(e.stagger||0,t);e.staggerBy=kind;e.attack=Math.max(e.attack||0,.35);if(cork)e.poise=.75;if(e.mode==='spit'||e.mode==='windup'){e.mode='hunt';e.frame=undefined;e.cool=Math.max(e.cool||0,.8);}}
  }
  // The boss and its summoned mites are extra: they never count toward kills / levelTotal.
  function kill(e){
