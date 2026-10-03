@@ -32,6 +32,32 @@ test('real page starts, updates damage portrait and builds a persistent share ca
  expect(errors).toEqual([]);
 });
 
+test('streamed music follows the title, the shift and the pause',async({page})=>{
+ const errors=[];page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});page.on('pageerror',error=>errors.push(error.message));
+ await page.goto('/');
+ expect(await page.evaluate(()=>GameAudio.track)).toBeNull();
+ await page.mouse.click(8,8); // any gesture on the title screen
+ await expect.poll(()=>page.evaluate(()=>GameAudio.track)).toBe('menu');
+ await expect.poll(()=>page.evaluate(()=>GameAudio.musicElement('menu').paused)).toBe(false);
+ expect(await page.evaluate(()=>GameAudio.musicElement('menu').src)).toMatch(/assets\/audio\/music\/menu-arkady-is-back\.(webm|m4a)$/);
+ await page.getByRole('button',{name:/Начать смену/}).click();
+ await expect(page.locator('#hud')).toBeVisible();
+ expect(await page.evaluate(()=>GameAudio.track)).toBe('game');
+ await expect.poll(()=>page.evaluate(()=>{const e=GameAudio.musicElement('game');return !e.paused&&e.currentTime>0;}),{timeout:10000}).toBe(true);
+ await expect.poll(()=>page.evaluate(()=>GameAudio.musicElement('menu').paused)).toBe(true);
+ await page.keyboard.press('Escape');
+ await expect(page.locator('#pause-panel')).toBeVisible();
+ expect(await page.evaluate(()=>GameAudio.track)).toBe('menu');
+ await expect.poll(()=>page.evaluate(()=>GameAudio.musicElement('menu').paused)).toBe(false);
+ await expect.poll(()=>page.evaluate(()=>GameAudio.musicElement('game').paused)).toBe(true);
+ const paused=await page.evaluate(()=>GameAudio.musicElement('game').currentTime);
+ await page.locator('#resume').click();
+ await expect.poll(()=>page.evaluate(()=>GameAudio.musicElement('game').paused)).toBe(false);
+ await expect.poll(()=>page.evaluate(()=>GameAudio.musicElement('game').currentTime)).toBeGreaterThan(paused);
+ expect(await page.evaluate(()=>GameAudio.musicElement('game').currentTime)).toBeLessThan(paused+5); // continues, not restarted
+ expect(errors).toEqual([]);
+});
+
 const overlaps=(a,b)=>a.x<b.x+b.width&&b.x<a.x+a.width&&a.y<b.y+b.height&&b.y<a.y+a.height;
 
 test('Esc opens the pause panel over the live scene and settings persist across reloads',async({page})=>{

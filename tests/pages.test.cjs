@@ -17,4 +17,14 @@ const tests=[...pkg.scripts.test.matchAll(/node\s+(tests\/\S+\.cjs)/g)].map(m=>m
 assert.ok(tests.includes('tests/pages.test.cjs'),'package.json runs the pages test');
 for(const file of tests)assert.ok(lines.includes('node '+file),'pages.yml does not run '+file);
 assert.ok(lines.includes('npm run test:browser'),'pages.yml runs browser tests');
-console.log('PASS: '+scripts.length+' page scripts checked and deployed, '+tests.length+' node tests run in Pages workflow');
+// Every streamed music file audio.js can request (both formats) is tracked and matched by a music cp glob; source MP3s never are.
+const {execFileSync}=require('node:child_process'),audio=readFileSync('audio.js','utf8');
+const tracks=[...audio.matchAll(/file:'([^']+)'/g)].map(m=>m[1]),exts=['webm','m4a'];
+assert.ok(tracks.length>=4&&audio.includes("'assets/audio/music/'")&&exts.every(ext=>audio.includes("'"+ext+"'")),'music tracks found in audio.js: '+tracks);
+const tracked=new Set(execFileSync('git',['ls-files','assets/audio/music'],{encoding:'utf8'}).split('\n').filter(Boolean));
+const musicCopy=lines.find(l=>l.startsWith('cp ')&&l.endsWith('_site/assets/audio/music/'));assert.ok(musicCopy,'pages.yml copies music');
+const globs=musicCopy.split(/\s+/).slice(1,-1).map(g=>new RegExp('^'+g.replace(/[.]/g,'\\.').replace(/\*/g,'[^/]*')+'$'));
+const deployed=file=>globs.some(re=>re.test(file));
+for(const name of tracks)for(const ext of exts){const file='assets/audio/music/'+name+'.'+ext;assert.ok(tracked.has(file),'music file is not in Git: '+file);assert.ok(deployed(file),'pages.yml does not copy '+file);}
+for(const file of ['assets/audio/music/Arkady is  Back.mp3','assets/audio/music/arkady-hunting.mp3'])assert.ok(!deployed(file),'pages.yml must not publish MP3 sources: '+file);
+console.log('PASS: '+scripts.length+' page scripts checked and deployed, '+tests.length+' node tests run in Pages workflow, '+tracks.length*exts.length+' music files tracked and deployed');

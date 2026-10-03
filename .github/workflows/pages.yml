@@ -59,7 +59,7 @@ jobs:
           cp assets/art/*.webp _site/assets/art/
           cp assets/art/brand/* _site/assets/art/brand/
           find assets/audio/voice -name '[0-9][0-9].mp3' ! -name '14.mp3' ! -name '29.mp3' ! -name '43.mp3' -exec cp {} _site/assets/audio/voice/ \;
-          cp assets/audio/music/*.mp3 _site/assets/audio/music/
+          cp assets/audio/music/*.webm assets/audio/music/*.m4a _site/assets/audio/music/
           cp assets/audio/sfx/*.mp3 _site/assets/audio/sfx/
           cp assets/audio/SOURCES.md _site/assets/audio/
           touch _site/.nojekyll
