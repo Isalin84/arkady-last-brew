@@ -14,7 +14,7 @@ test('real page starts, updates damage portrait and builds a persistent share ca
  await page.evaluate(()=>{GameScore.kill(0,75);updateHUD();});
  await expect(page.locator('#score')).not.toHaveText('0');
  await page.evaluate(()=>{loadLevel(3);running=true;GameScore.kill(10,310);finish(true);});
- await expect(page.locator('.cover-art')).toHaveAttribute('src','assets/art/stella-kisses-arkady.webp');
+ await expect(page.locator('.cover-art')).toHaveAttribute('src','assets/art/finale-stella.webp');
  await expect(page.locator('#score-panel')).toBeHidden();
  await expect(page.locator('#show-results')).toBeVisible();
  await page.screenshot({path:testInfo.outputPath('finale-kiss-desktop.png'),fullPage:true});

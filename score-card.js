@@ -21,7 +21,7 @@ const ScoreCard=(()=>{
  function fitCover(ctx,image,x,y,w,h){const scale=Math.max(w/image.naturalWidth,h/image.naturalHeight),sw=w/scale,sh=h/scale,sx=(image.naturalWidth-sw)/2,sy=(image.naturalHeight-sh)/2;ctx.drawImage(image,sx,sy,sw,sh,x,y,w,h);}
  async function create(result){
   const canvas=document.createElement('canvas');canvas.width=1200;canvas.height=630;const ctx=canvas.getContext('2d');
-  const [hero,logo]=await Promise.all([loadImage('assets/art/stella-kisses-arkady.webp'),loadImage('assets/art/brand/logo.png')]);
+  const [hero,logo]=await Promise.all([loadImage('assets/art/finale-stella.webp'),loadImage('assets/art/brand/logo.png')]);
   ctx.fillStyle='#0B1D3A';ctx.fillRect(0,0,1200,630);
   if(hero){fitCover(ctx,hero,0,0,1200,630);const fade=ctx.createLinearGradient(0,0,790,0);fade.addColorStop(0,'rgba(11,29,58,.99)');fade.addColorStop(.62,'rgba(11,29,58,.88)');fade.addColorStop(1,'rgba(11,29,58,.08)');ctx.fillStyle=fade;ctx.fillRect(0,0,920,630);}
   ctx.fillStyle='#D4AF37';ctx.fillRect(0,0,1200,14);ctx.fillRect(68,116,220,5);

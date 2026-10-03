@@ -150,7 +150,7 @@ const GameFX=(()=>{
  // Muzzle flash drawn in gun space (call between the gun transform and restore); also queues screen-space puffs.
  const MUZZLE=[null,null,[-23,-316],[-25,-305]];
  fx.muzzle=(g,weapon)=>{
-  const m=MUZZLE[weapon];if(!m)return;
+  const m=(typeof WeaponArt!=='undefined'&&WeaponArt.muzzle?.(weapon))||MUZZLE[weapon];if(!m)return;
   if(fx.emit){fx.emit=0;const t=g.getTransform?.();if(t){const ax=t.a*m[0]+t.c*m[1]+t.e,ay=t.b*m[0]+t.d*m[1]+t.f;
    if(weapon===2){for(let i=0;i<3;i++)spawnSp(ax+rnd(-4,4),ay,rnd(-30,30),rnd(-70,-30),rnd(9,13),rnd(30,50),rnd(.45,.7),0);for(let i=0;i<5;i++)spawnSp(ax,ay,rnd(-140,100),rnd(-170,-30),rnd(1.5,2.5),0,rnd(.1,.2),2);}
    else for(let i=0;i<8;i++)spawnSp(ax+rnd(-12,12),ay+rnd(-6,6),rnd(-260,-100),rnd(0,90),rnd(7,14),rnd(-30,-8),rnd(.22,.38),1);}}

@@ -41,8 +41,8 @@ const GameUI=(()=>{
  function setFinaleCover(finale){
   const overlay=$('#overlay'),art=$('.cover-art');overlay.classList.toggle('finale',finale);
   overlay.classList.toggle('finale-moment',finale);overlay.classList.remove('finale-results');
-  art.src=finale?'assets/art/stella-kisses-arkady.webp':'assets/art/arkady-cover.webp';
-  art.alt=finale?'Стелла целует спасшего её Аркадия в щёку в солодовне':'Аркадий со скрещёнными руками на фоне пивоварни';
+  art.src=finale?'assets/art/finale-stella.webp':'assets/art/cover-monsters.webp';
+  art.alt=finale?'Стелла целует спасшего её Аркадия в щёку в солодовне':'Аркадий со скрещёнными руками, за его спиной из котлов лезут монстры';
   $('#show-results').hidden=!finale;if(!finale)$('#score-panel').hidden=true;refreshDifficulty();
  }
  async function prepareFinalScore(result){
@@ -217,7 +217,9 @@ const GameUI=(()=>{
  }
  function drawThumb(canvas,index){
   if(typeof WeaponArt==='undefined'||!canvas.getContext)return;
-  const g=canvas.getContext('2d');g.clearRect(0,0,canvas.width,canvas.height);const [sx,sy,sw,sh]=WeaponArt.thumbRect?.(index)||[110,80,530,550];g.drawImage(WeaponArt.get(index),sx,sy,sw,sh,0,0,canvas.width,canvas.height);
+  const g=canvas.getContext('2d');g.clearRect(0,0,canvas.width,canvas.height);const icon=WeaponArt.icon?.(index);
+  if(icon){const s=Math.min(canvas.width,canvas.height);g.drawImage(icon,(canvas.width-s)/2,(canvas.height-s)/2,s,s);return;}
+  const [sx,sy,sw,sh]=WeaponArt.thumbRect?.(index)||[110,80,530,550];g.drawImage(WeaponArt.get(index),sx,sy,sw,sh,0,0,canvas.width,canvas.height);
  }
  // Between-level upgrade choice: three cards, click or 1-3 picks, onPick(id|null) runs exactly once.
  function showUpgrades(choices,onPick){
@@ -261,7 +263,7 @@ const GameUI=(()=>{
   $('#copy-game-link').addEventListener('click',async()=>{try{await ScoreCard.copyLink();scoreButtonFeedback($('#copy-game-link'),'Ссылка скопирована');}catch{scoreButtonFeedback($('#copy-game-link'),'Не удалось скопировать');}});
   $('#share-score').addEventListener('click',async()=>{try{if(await ScoreCard.share())scoreButtonFeedback($('#share-score'),'Отправлено');else{ScoreCard.download();await ScoreCard.copyLink();scoreButtonFeedback($('#share-score'),'Скачано + ссылка');}}catch(err){if(err?.name!=='AbortError')scoreButtonFeedback($('#share-score'),'Не удалось отправить');}});
   $('#show-results').addEventListener('click',revealFinalScore);$('#replay-score').addEventListener('click',start);
-  $$('.weapon-thumb').forEach((c,i)=>drawThumb(c,i));$$('.slot-thumb').forEach((c,i)=>drawThumb(c,i));
+  const thumbs=()=>{$$('.weapon-thumb').forEach((c,i)=>drawThumb(c,i));$$('.slot-thumb').forEach((c,i)=>drawThumb(c,i));};thumbs();if(typeof WeaponArt!=='undefined')WeaponArt.whenIconsLoad?.(thumbs);
   $$('.slot').forEach((b,i)=>b.addEventListener('click',()=>{if(typeof choose==='function')choose(i);}));
   $('#resume').addEventListener('click',()=>start());$('#settings-done').addEventListener('click',()=>pausePanel(false));$('#open-settings').addEventListener('click',()=>pausePanel(true,'start'));
   $('#restart-level').addEventListener('click',restartClick);$('#pause-panel').addEventListener('keydown',trapTab);

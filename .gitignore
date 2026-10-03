@@ -16,3 +16,6 @@ test-results/
 playwright-report/
 .claude/worktrees/
 node_modules
+
+# Full-size PNG originals of generated art (WebP copies ship in assets/art)
+assets/art/source/

@@ -1,5 +1,6 @@
 /* Original layered Canvas artwork. Cached at 2x for crisp outlines; light comes from the upper left.
-   Each weapon is split into back (sleeve, forearm, back of hand), item and front (fingers, thumb) so the throw animation can pull the item out of the hand. */
+   Each weapon is split into back (sleeve, forearm, back of hand), item and front (fingers, thumb) so the throw animation can pull the item out of the hand.
+   Painted sprites (assets/art/weapon-*.webp, the same 480x400 frame at 2x) replace this art once they load; it stays as the fallback. */
 'use strict';
 const WeaponArt=(()=>{
  const cache=[],layerCache=[],THUMB=[110,80,530,550];
@@ -235,7 +236,26 @@ const WeaponArt=(()=>{
  function make(){const c=document.createElement('canvas');c.width=960;c.height=800;const g=c.getContext('2d');g.scale(2,2);g.lineJoin='round';g.lineCap='round';return {c,g};}
  function full(i){const {c,g}=make();back(g,i);item(g,i);front(g,i);return c;}
  function layerSet(i){const b=make(),m=make(),f=make();back(b.g,i);item(m.g,i);front(f.g,i);return {back:b.c,item:m.c,front:f.c};}
+ // ---- painted sprites ----
+ const NAMES=['bottle','can','corker','foamer'];
+ const load=src=>{if(typeof Image==='undefined')return null;const im=new Image();im.decoding='async';im.src=src;return im;};
+ const ok=im=>!!im&&im.complete&&im.naturalWidth>0;
+ const sprites=NAMES.map(n=>load(`assets/art/weapon-${n}.webp`)),release=load('assets/art/weapon-hand-release.webp'),icons=NAMES.map(n=>load(`assets/art/icon-${n}.webp`));
+ // Offset of each painted sprite inside the frame, and its muzzle in gun space (frame anchor at 240,365).
+ const PAINT=[{dx:45,dy:-10},{dx:45,dy:-10},{dx:0,dy:0,muzzle:[-16,-275]},{dx:0,dy:0,muzzle:[-40,-237]}];
+ const painted=i=>ok(sprites[i])&&(i>1||ok(release));
  return {
+  // Draws the held weapon in gun space for a GameFX.gunPose() result.
+  draw(g,p){
+   const i=p.shown;
+   if(painted(i)){const o=PAINT[i];g.drawImage(i<2&&!p.item?release:sprites[i],-240+o.dx,-365+o.dy+(p.item?p.itemY:0),480,400);return;}
+   if(i<2&&(p.throwing||!p.item)){const L=this.layers(i);g.drawImage(L.back,-240,-365,480,400);if(p.item)g.drawImage(L.item,-240,-365+p.itemY,480,400);g.drawImage(L.front,-240,-365,480,400);}
+   else g.drawImage(this.get(i),-240,-365,480,400);
+  },
+  muzzle(i){return painted(i)?PAINT[i].muzzle:null;},
+  // Hand-free item picture for HUD slots and cards, or null until it loads.
+  icon(i){return ok(icons[i])?icons[i]:null;},
+  whenIconsLoad(fn){for(const im of icons)if(im&&!ok(im))im.addEventListener('load',fn,{once:true});},
   get(i){return cache[i]??=full(i);},
   // Separate hand and item canvases (same 960x800 frame) for the throw animation.
   layers(i){return layerCache[i]??=layerSet(i);},
