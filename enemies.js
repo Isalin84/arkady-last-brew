@@ -13,7 +13,7 @@ const EnemyAI=(()=>{
  function shake(v){if(typeof GameFX.addShake==='function')GameFX.addShake(v);else if(typeof GameFX.shake?.intensity==='number')GameFX.shake.intensity=Math.max(GameFX.shake.intensity,v);}
  function radio(title,text,seconds){storyTimer=seconds;const el=document.querySelector('#radio-message');el.hidden=false;el.innerHTML=`<b>${title}</b><span>${text}</span>`;}
  function mass(e){const s=ENEMY_TYPES[e.type];return s.mass??(s.chargeSpeed?6:s.hp>=200?3:s.hp>=110?1.5:1);}
- function make(type,x,y,extra){const hp=ENEMY_TYPES[type].hp;return Object.assign({x,y,type,hp,max:hp,attack:.6,hit:0,seed:Math.random()*9,alert:true,mode:'hunt',phase:0,chargeCooldown:1.5,heading:Math.PI,stagger:0,slow:0,kx:0,ky:0,poise:0,cool:1,lag:hp},extra);}
+ function make(type,x,y,extra){const hp=Math.round(ENEMY_TYPES[type].hp*(typeof diffRules!=='undefined'?diffRules.enemyHp:1));return Object.assign({x,y,type,hp,max:hp,attack:.6,hit:0,seed:Math.random()*9,alert:true,mode:'hunt',phase:0,chargeCooldown:1.5,heading:Math.PI,stagger:0,slow:0,kx:0,ky:0,poise:0,cool:1,lag:hp},extra);}
  // src (optional) = {x,y,force,type}: where the hit came from, knockback strength and projectile kind.
  function damage(e,d,src){
   if(e.hp<=0)return;e.hp-=d;e.hit=.16;GameFX.onHit(e,d);

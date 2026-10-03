@@ -36,7 +36,7 @@ const ScoreCard=(()=>{
   ctx.fillStyle='#D4AF37';ctx.font='800 31px Montserrat,Arial,sans-serif';ctx.fillText('СМОЖЕШЬ НАБРАТЬ БОЛЬШЕ?',68,472);
   ctx.fillStyle='#DCE2EC';ctx.font='500 21px Montserrat,Arial,sans-serif';ctx.fillText('Сравни результат с коллегами:',68,517);
   ctx.fillStyle='#FAF9F6';ctx.font='700 22px monospace';ctx.fillText(GAME_URL,68,558);
-  ctx.fillStyle='#BAC5D5';ctx.font='500 16px Montserrat,Arial,sans-serif';ctx.fillText('Стелла спасена · Arkady is Back · v0.9',68,602);
+  ctx.fillStyle='#BAC5D5';ctx.font='500 16px Montserrat,Arial,sans-serif';ctx.fillText('Стелла спасена · Arkady is Back · v1.0',68,602);
   currentBlob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
   if(currentUrl)URL.revokeObjectURL(currentUrl);currentUrl=URL.createObjectURL(currentBlob);currentName=`arkady-${result.score}-points.png`;
   return{url:currentUrl,blob:currentBlob,name:currentName,gameUrl:GAME_URL};

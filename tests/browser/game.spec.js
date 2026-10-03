@@ -3,7 +3,7 @@ const {test,expect}=require('@playwright/test');
 test('real page starts, updates damage portrait and builds a persistent share card',async({page},testInfo)=>{
  const errors=[];page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});page.on('pageerror',error=>errors.push(error.message));
  await page.goto('/');
- await expect(page.locator('footer')).toContainText('v0.9');
+ await expect(page.locator('footer')).toContainText('v1.0');
  await page.getByRole('button',{name:/Начать смену/}).click();
  await expect(page.locator('#hud')).toBeVisible();
  await expect(page.locator('#arkady-health-portrait')).toHaveAttribute('src','assets/art/arkady-health-100.webp');

@@ -40,7 +40,7 @@ function start(){
 function pause(){if(!running)return;$('#radio-message').hidden=true;GameAudio.pause();running=false;renderRequested=true;fire=false;keys.clear();GameUI.pausePanel(true);document.exitPointerLock?.();}
 function restartLevel(){if(GameSettings.get('difficulty')==='veteran')reset();else dead=true;start();}
 function finish(win){
- GameAudio.pause();transition=win&&levelIndex<LEVELS.length-1;runFailed=!win&&GameScore.stats.deaths+1>=diffRules.lives;const levelMedal=win?GameScore.finishLevel({level:levelIndex,secretsFound,secretsTotal}):null;
+ GameAudio.pause();GameUI.clearToast();transition=win&&levelIndex<LEVELS.length-1;runFailed=!win&&GameScore.stats.deaths+1>=diffRules.lives;const levelMedal=win?GameScore.finishLevel({level:levelIndex,secretsFound,secretsTotal}):null;
  GameAudio.say(win?(transition?LEVELS[levelIndex].dialogue.transition:'stellathanks'):'death',true);
  running=false;won=win&&!transition;dead=!win;renderRequested=true;fire=false;keys.clear();document.exitPointerLock?.();setFinaleCover(won);if(won)GameAudio.kiss?.();$('#overlay').hidden=false;$('#radio-message').hidden=true;
  const next=LEVELS[levelIndex].next;

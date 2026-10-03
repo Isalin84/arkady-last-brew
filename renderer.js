@@ -304,8 +304,9 @@ const Renderer=(()=>{
  function rasterParticles(){
   const list=V.particles||[],kx=RW/W,ky=RH/VIEW,ns=debug.noShade;
   for(const q of list){
-   proj(q.x,q.y);if(PD<.1)continue;const cx=(PX*kx)|0;if(cx<0||cx>=RW||PD>=zbuf[cx])continue;
-   const r=Math.min(20,5/PD)*(q.size||1),sy=VIEW/2+(.4-(q.z||0))*VIEW/PD;let x0=Math.round(PX*kx),y0=Math.round(sy*ky);const x1=Math.min(RW,x0+Math.max(1,Math.round(r*kx))),y1=Math.min(RH,y0+Math.max(1,Math.round(r*ky)));if(x0<0)x0=0;if(y0<0)y0=0;if(x0>=x1||y0>=y1)continue;
+   proj(q.x,q.y);if(PD<.35)continue;const cx=(PX*kx)|0;if(cx<0||cx>=RW||PD>=zbuf[cx])continue;
+   // Capped so debris right in front of the camera never becomes a big flat block.
+   const r=Math.min(14,Math.min(8,4/PD)*(q.size||1)),sy=VIEW/2+(.4-(q.z||0))*VIEW/PD;let x0=Math.round(PX*kx),y0=Math.round(sy*ky);const x1=Math.min(RW,x0+Math.max(1,Math.round(r*kx))),y1=Math.min(RH,y0+Math.max(1,Math.round(r*ky)));if(x0<0)x0=0;if(y0<0)y0=0;if(x0>=x1||y0>=y1)continue;
    const c=colorOf(q.color);let r0=c[0],g0=c[1],b0=c[2];
    if(!ns){let lr=1,lg=1,lb=1;if(!q.fullbright){sampleLight(q.x,q.y,true);lr=Math.max(.7,SR);lg=Math.max(.7,SG);lb=Math.max(.7,SB);}const f=fogAt(PD)*(q.fullbright?.4:.8);r0=r0*lr*(1-f)+FOG[0]*f;g0=g0*lg*(1-f)+FOG[1]*f;b0=b0*lb*(1-f)+FOG[2]*f;}
    const col=pack(r0,g0,b0);for(let y=y0;y<y1;y++)for(let x=x0,o=y*RW+x0;x<x1;x++,o++)if(PD<zbuf[x])fb[o]=col;

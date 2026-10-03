@@ -194,6 +194,7 @@ footer a{color:#dce2ec}
 #score-panel table{width:100%;border-collapse:collapse;font-size:10px}
 #score-panel th,#score-panel td{padding:5px 7px;text-align:left;border-bottom:1px solid #ffffff17}
 #score-panel th{color:#bac5d5;font-weight:600}
+.diff-badge{display:inline-block;margin-left:5px;padding:1px 4px;border:1px solid #d4af37;color:#d4af37;font-size:8px;font-weight:800;letter-spacing:.5px;vertical-align:1px}
 #score-panel tr.current{background:#d4af3725;color:#ffe79a}
 .records-note{font-size:9px;color:#bac5d5;margin:8px 0 0}
 @media(max-width:700px){
@@ -571,3 +572,5 @@ body.panel-open #mobile{display:none!important}
  #hud *,#combo,#pause-panel *,#upgrade-picker *,#difficulty,#difficulty *,#toast,.weapon,.slot,#touchfire,.primary,.ghost{animation:none!important;transition:none!important}
  .up-card:not(:disabled):hover,.weapon:hover{transform:none}
 }
+/* v1.0: on the transition screen the subtitle sits below the upgrade cards. */
+#view:has(#overlay:not([hidden]):not(.finale)) #subtitle{bottom:3%}

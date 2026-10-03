@@ -12,13 +12,15 @@ const GameUI=(()=>{
  let toastTime=0,panelMode=null,pausedAt=0,fsAt=-1e4,confirmUntil=0,lastFocus=null,up=null,inGame=null,lastChips=null,lastHurtVar=0;
  let dmgT=0,dmgDir=0,seenDir=null,prevHurt=0,lastMult=-1,lastSecrets=null,lastPortrait='';
  function toast(s){$('#toast').textContent=s;$('#toast').style.opacity=1;toastTime=2.6;}
+ // Overlays (transition, death, finale) start clean: in-game toasts would sit on top of their headings.
+ function clearToast(){toastTime=0;$('#toast').style.opacity=0;}
  // ---- HUD ----
  function updateHUD(){
-  const health=Math.max(0,Math.min(100,Math.ceil(player.hp))),portrait=$('#arkady-health-portrait');
-  const state=health>=76?'100':health>=51?'75':health>=25?'50':'25';
+  const top=player.maxHp||100,health=Math.max(0,Math.min(top,Math.ceil(player.hp))),pct=Math.round(health/top*100),portrait=$('#arkady-health-portrait');
+  const state=pct>=76?'100':pct>=51?'75':pct>=25?'50':'25';
   const labels={100:'Аркадий здоров',75:'Аркадий получил лёгкие повреждения',50:'Аркадий сильно пострадал',25:'Аркадий критически ранен'};
   const bar=$('#healthbar');
-  $('#health').textContent=health;bar.style.width=health+'%';bar.classList.toggle('low',health<30);bar.classList.toggle('mid',health>=30&&health<60);portrait.src='assets/art/arkady-health-'+state+'.webp';portrait.alt=labels[state];
+  $('#health').textContent=health;bar.style.width=pct+'%';bar.classList.toggle('low',pct<30);bar.classList.toggle('mid',pct>=30&&pct<60);portrait.src='assets/art/arkady-health-'+state+'.webp';portrait.alt=labels[state];
   $('#weaponname').textContent=weapons[weapon].name;$('#ammo').textContent=ammoText(weapons[weapon].ammo);$('#kills').innerHTML=kills+' <em>/ '+levelTotal+'</em>';$('#score').textContent=Math.round(GameScore.current);
   $$('.weapon').forEach((b,i)=>b.classList.toggle('active',i===weapon));
   $$('.slot').forEach((b,i)=>{const w=weapons[i];b.classList.toggle('active',i===weapon);b.classList.toggle('empty',w.ammo<=0);setText(b.querySelector('.slot-ammo'),ammoText(w.ammo));});
@@ -45,7 +47,7 @@ const GameUI=(()=>{
  }
  async function prepareFinalScore(result){
   $('#final-score').textContent=result.score;$('#score-breakdown').textContent=`Зачистка +${result.clearBonus} · здоровье +${result.healthBonus} · скорость +${result.timeBonus}`;
-  $('#score-records').innerHTML=result.records.map((record,index)=>`<tr class="${record.id===result.id?'current':''}"><td>${index+1}</td><td>${record.score}</td><td>${GameScore.formatTime(record.time)}</td><td>${record.health}%</td></tr>`).join('');
+  $('#score-records').innerHTML=result.records.map((record,index)=>`<tr class="${record.id===result.id?'current':''}"><td>${index+1}</td><td>${record.score}${GameScore.difficultyBadge?.(record.difficulty)?` <span class="diff-badge">${GameScore.difficultyBadge(record.difficulty)}</span>`:''}</td><td>${GameScore.formatTime(record.time)}</td><td>${record.health}%</td></tr>`).join('');
   $('#score-card-preview').removeAttribute('src');$('#score-card-preview').alt='Создаётся карточка результата';
   try{const card=await ScoreCard.create(result);$('#score-card-preview').src=card.url;$('#score-card-preview').alt=`Карточка результата: ${result.score} очков`;}catch(err){console.warn('Score card unavailable:',err.message);}
  }
@@ -212,7 +214,7 @@ const GameUI=(()=>{
  }
  function drawThumb(canvas,index){
   if(typeof WeaponArt==='undefined'||!canvas.getContext)return;
-  const g=canvas.getContext('2d');g.clearRect(0,0,canvas.width,canvas.height);g.drawImage(WeaponArt.get(index),110,80,530,550,0,0,canvas.width,canvas.height);
+  const g=canvas.getContext('2d');g.clearRect(0,0,canvas.width,canvas.height);const [sx,sy,sw,sh]=WeaponArt.thumbRect?.(index)||[110,80,530,550];g.drawImage(WeaponArt.get(index),sx,sy,sw,sh,0,0,canvas.width,canvas.height);
  }
  // Between-level upgrade choice: three cards, click or 1-3 picks, onPick(id|null) runs exactly once.
  function showUpgrades(choices,onPick){
@@ -262,5 +264,5 @@ const GameUI=(()=>{
   $('#restart-level').addEventListener('click',restartClick);$('#pause-panel').addEventListener('keydown',trapTab);
   bindSettings();bindDifficulty();bindFullscreen();bindTouch();bindUpgrades();
  }
- return {toast,updateHUD,setFinaleCover,prepareFinalScore,revealFinalScore,frame,overlays,showUpgrades,pickUpgrade,upgradeKey,pausePanel,escape,onStart,init,touchMove,resetTouch,toggleFullscreen,fullscreenSupported:fsSupported,recentFullscreenChange,setDifficulty,refreshDifficulty,restartClick,LOCK_HINT};
+ return {toast,clearToast,updateHUD,setFinaleCover,prepareFinalScore,revealFinalScore,frame,overlays,showUpgrades,pickUpgrade,upgradeKey,pausePanel,escape,onStart,init,touchMove,resetTouch,toggleFullscreen,fullscreenSupported:fsSupported,recentFullscreenChange,setDifficulty,refreshDifficulty,restartClick,LOCK_HINT};
 })();
