@@ -37,8 +37,8 @@ const GameAudio=(()=>{
  function update(dt,moving,sprinting){if(!active||!ac)return;ambientOn();if(moving){walkTime+=dt;const now=ac.currentTime;if(now-stepAt>(sprinting?.3:.44)){sample('steps',{volume:.28,offset:.28,duration:.25,rate:sprinting?1.18:1,pan:Math.sin(now*5)*.14});stepAt=now;}const event=AUDIO_LEVEL_EVENTS[level]?.find(name=>name.endsWith('walk'))||'walk';if(walkTime>nextWalk&&say(event))nextWalk=walkTime+22;}}
  function monster(type,distance=1,pan=0,attack=false){
   if(!active||!ac||ac.currentTime-monsterAt<(attack?.6:1.6))return;
-  monsterAt=ac.currentTime;const id=type===5||type===10||type===1?'monsterLarge':type===3?'monsterCan':'monsterSmall';
-  sample(id,{volume:(attack?.72:.45)/(1+distance*.17),pan,rate:(type===10?.72:type===8?1.36:type===9?.86:type===5?.85:type===4?1.2:1)*( .94+Math.random()*.12)});
+  monsterAt=ac.currentTime;const id=type===5||type===10||type===1||type===12?'monsterLarge':type===3?'monsterCan':'monsterSmall';
+  sample(id,{volume:(attack?.72:.45)/(1+distance*.17),pan,rate:(type===12?.55:type===11?1.15:type===10?.72:type===8?1.36:type===9?.86:type===5?.85:type===4?1.2:1)*( .94+Math.random()*.12)});
  }
  function vehicle(event,distance=1,pan=0){
   if(!active||!ac)return;const now=ac.currentTime;
@@ -49,9 +49,34 @@ const GameAudio=(()=>{
   if(event==='crash')sample('forkliftCrash',{volume:volume*.75,pan});
   if(event==='radio')sample('steam',{volume:.18,rate:1.8,offset:2,duration:.35});
  }
+ // Synthesised one-shots (no assets): oscillators and filtered noise through the effects bus, so volume and mute apply.
+ let noiseBuffer=null;const synthAt={},SYNTH_GAP={hitmarker:.04,splat:.06,stagger:.08,combo:.12,spit:.1};
+ function noise(){if(!noiseBuffer){const n=Math.floor(ac.sampleRate*.8);noiseBuffer=ac.createBuffer(1,n,ac.sampleRate);const data=noiseBuffer.getChannelData(0);for(let i=0;i<n;i++)data[i]=Math.random()*2-1;}return noiseBuffer;}
+ function track(node,end){const entry={s:node};live.add(entry);node.onended=()=>live.delete(entry);node.start(end[0]);node.stop(end[1]);}
+ function envelope(g,t,attack,peak,length){g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(peak,t+attack);g.gain.exponentialRampToValueAtTime(.0001,t+length);}
+ function tone(out,type,from,to,t,length,peak,attack=.004){const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.setValueAtTime(from,t);if(to!==from)o.frequency.exponentialRampToValueAtTime(to,t+length);envelope(g,t,attack,peak,length);o.connect(g);g.connect(out);track(o,[t,t+length+.05]);return o;}
+ function hiss(out,kind,from,to,q,t,length,peak,attack=.004){const s=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();s.buffer=noise();f.type=kind;f.frequency.setValueAtTime(from,t);if(to!==from)f.frequency.exponentialRampToValueAtTime(to,t+length);f.Q.value=q;envelope(g,t,attack,peak,length);s.connect(f);f.connect(g);g.connect(out);track(s,[t,t+length+.05]);}
+ const voices={
+  spit:(o,t)=>{hiss(o,'bandpass',300,1400,6,t,.42,.35,.3);tone(o,'sine',90,160,t,.4,.12,.3);hiss(o,'bandpass',2200,500,2,t+.44,.16,.8);tone(o,'triangle',520,140,t+.44,.12,.35);},
+  splat:(o,t)=>{hiss(o,'lowpass',1400,300,1,t,.22,.75);tone(o,'sine',160,55,t,.18,.5);hiss(o,'bandpass',3000,1500,3,t+.03,.08,.2);},
+  bossRoar:(o,t)=>{const v=tone(o,'sawtooth',78,46,t,1.25,.32,.09),lfo=ac.createOscillator(),depth=ac.createGain();lfo.frequency.value=7;depth.gain.value=9;lfo.connect(depth);depth.connect(v.frequency);track(lfo,[t,t+1.3]);tone(o,'square',117,70,t+.05,1.1,.1,.12);hiss(o,'bandpass',420,180,3,t,1.2,.4,.15);},
+  bossStomp:(o,t)=>{tone(o,'sine',95,28,t,.55,.95,.003);hiss(o,'lowpass',500,90,1,t,.4,.8);hiss(o,'bandpass',1800,600,1.5,t+.02,.15,.18);},
+  secret:(o,t)=>{[523,659,784,1047].forEach((f,i)=>tone(o,'triangle',f,f,t+i*.075,.32,.22));tone(o,'sine',2093,2093,t+.3,.4,.06);},
+  combo:(o,t)=>{tone(o,'square',880,880,t,.07,.09);tone(o,'square',1320,1320,t+.06,.1,.09);},
+  upgrade:(o,t)=>{tone(o,'triangle',300,900,t,.42,.22,.02);[784,988,1175].forEach((f,i)=>tone(o,'sine',f,f,t+.2+i*.07,.35,.12));},
+  hitmarker:(o,t)=>{tone(o,'triangle',1900,1500,t,.045,.16,.001);},
+  stagger:(o,t)=>{tone(o,'sine',430,170,t,.14,.4,.002);hiss(o,'bandpass',900,400,4,t,.09,.25);}
+ };
+ function synth(name,{pan=0,volume=1,distance=0}={}){
+  if(!ac||!enabled||!active||!voices[name])return false;const now=ac.currentTime;
+  if(now-(synthAt[name]??-1)<(SYNTH_GAP[name]??.03))return false;synthAt[name]=now;
+  const out=ac.createGain();out.gain.value=.8*Math.max(0,volume)/(1+Math.max(0,distance)*.18);
+  if(ac.createStereoPanner){const p=ac.createStereoPanner();p.pan.value=Math.max(-1,Math.min(1,pan));out.connect(p);p.connect(effects);}else out.connect(effects);
+  voices[name](out,now);return true;
+ }
  function hit(){sample('steps',{volume:.5,offset:.28,duration:.18,rate:.55});}
  function kill(){sample('can',{volume:.22,rate:.5,offset:.3,duration:.35});}
  function kiss(){sample('kiss',{volume:.9});}
  function voiceSeconds(){return ac?Math.max(0,voiceUntil-ac.currentTime):0;}
- return{resume,pause,reset,setLevel,monster,vehicle,setEnabled,setVolume,get volumes(){return {...levels};},say,shot,impact,update,hit,kill,kiss,voiceSeconds,lines,get enabled(){return enabled;},get loaded(){return Object.keys(buffers);}};
+ return{resume,pause,reset,setLevel,monster,vehicle,synth,setEnabled,setVolume,get volumes(){return {...levels};},say,shot,impact,update,hit,kill,kiss,voiceSeconds,lines,get enabled(){return enabled;},get loaded(){return Object.keys(buffers);}};
 })();

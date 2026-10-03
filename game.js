@@ -61,7 +61,6 @@ function hitEnemy(sh,e){
  if(sh.type==='can')return;let d=sh.damage,crit=false;
  if(sh.type==='bottle'&&(e.stagger>0||e.slow>0||(sh.crit&&Math.random()<sh.crit))){d*=2;crit=true;}
  damage(e,d,{x:sh.x-sh.dx*.05,y:sh.y-sh.dy*.05,force:0,type:sh.type,crit});if(crit)GameFX.hitCrit=1;
- if(e.hp>0){if(sh.type==='cork'&&e.max<=130&&!(e.stagger>0)&&!(e.sCd>0)){e.stagger=.15;e.sCd=.6;}else if(sh.type==='foam')e.slow=Math.max(e.slow||0,1.2);}
 }
 function pickUpgrade(id){const u=id&&UPGRADES.find(u=>u.id===id);if(!u||runUpgrades.includes(id))return;runUpgrades.push(id);player.hp+=u.heal||0;GameAudio.synth?.('upgrade');toast('Апгрейд: '+u.name);}
 function hurtPlayer(amount,src){
@@ -84,6 +83,7 @@ function interact(){
  if(!running||levelIndex!==3)return;
  if(stellaVisible){const [sx,sy]=LEVELS[3].stella;if(Math.hypot(player.x-sx,player.y-sy)<1.35)finish(true);else toast('Стелла у открытого люка. Подойди к ней.');return;}
  if(kills<levelTotal){toast('Сначала очисти солодовню: '+kills+' / '+levelTotal);return;}
+ if(!bossDefeated){toast('Сначала Солодовый король!');return;}
  const stepInfo=rescueSteps[rescueStage];if(!stepInfo)return;
  const panel=props.find(p=>p.type===stepInfo.type);
  if(!panel||Math.hypot(player.x-panel.x,player.y-panel.y)>1.35){toast(stepInfo.hint+' · E');return;}
@@ -98,7 +98,7 @@ if(keys.has('ArrowLeft'))player.a-=dt*2;if(keys.has('ArrowRight'))player.a+=dt*2
 let f=Number(keys.has('KeyW')||keys.has('ArrowUp'))-Number(keys.has('KeyS')||keys.has('ArrowDown')),s=Number(keys.has('KeyD'))-Number(keys.has('KeyA'));let len=Math.hypot(f,s)||1,speed=(keys.has('ShiftLeft')?3.8:2.6)*dt;move(player,(Math.cos(player.a)*f-Math.sin(player.a)*s)/len*speed,(Math.sin(player.a)*f+Math.cos(player.a)*s)/len*speed);if(f||s)step+=dt*9;GameAudio.update(dt,Boolean(f||s),keys.has('ShiftLeft'));
 if(fire||keys.has('Space'))shoot();
 if(!EnemyAI.updateAll(dt))return;EnemyAI.updateShots(dt);
-for(const e of enemies){if(e.stagger>0)e.stagger=Math.max(0,e.stagger-dt);if(e.slow>0)e.slow=Math.max(0,e.slow-dt);if(e.sCd>0)e.sCd-=dt;}
+
 for(let sh of shots){sh.life-=dt;sh.age+=dt;let n=Math.ceil(Math.hypot(sh.dx,sh.dy)*dt/.1);for(let j=0;j<n&&sh.life>0;j++){sh.x+=sh.dx*dt/n;sh.y+=sh.dy*dt/n;if(solid(sh.x,sh.y)){sh.x-=sh.dx*dt/n;sh.y-=sh.dy*dt/n;impact(sh,true);sh.life=0;break;}let target=enemies.find(e=>e.hp>0&&Math.hypot(e.x-sh.x,e.y-sh.y)<((e.type===6||e.type===7||e.type===10)?.48:.34)&&!sh.hit?.includes(e));if(target){hitEnemy(sh,target);impact(sh);if(sh.pierce>0){sh.pierce--;(sh.hit||=[]).push(target);}else sh.life=0;}}if(sh.life>0)GameFX.trail(sh);if(sh.life<=0&&sh.type==='can'&&sh.age>=2.5)impact(sh);}
 shots=shots.filter(s=>s.life>0);GameFX.update(dt);
 items=items.filter(i=>{if(Math.hypot(i.x-player.x,i.y-player.y)<.65){if(i.type==='health'){if(player.hp>=maxHp())return true;player.hp=Math.min(maxHp(),player.hp+35);toast('Перерыв на воду: +35 здоровья');}else{weapons[1].ammo+=Math.round(8*(weapons[1].pick||1));weapons[2].ammo+=45;weapons[3].ammo+=35;toast('Ящик припасов: банки, пробки и пена');}GameScore.pickup();GameAudio.say('pickup');updateHUD();return false;}return true;});

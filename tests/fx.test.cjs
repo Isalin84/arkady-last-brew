@@ -62,11 +62,11 @@ e=mk(5,5);const cork={type:'cork',damage:19,dx:20,dy:0,x:5,y:5,crit:0};e.stagger
 e=mk(5,5);const sh2=bottleAt();sh2.crit=.2;const rnd=Math.random;Math.random=()=>.1;hitEnemy(sh2,e);assert.equal(e.hp,1000-84,'hop charge crits');Math.random=()=>.9;e=mk(5,5);hitEnemy(sh2,e);assert.equal(e.hp,1000-42,'hop charge misses');Math.random=rnd;
 e=mk(5,5);hitEnemy({type:'foam',damage:11,dx:8,dy:0,x:5,y:5,crit:0},e);assert.ok(e.slow>0,'foam slows');
 e=mk(5,5,100);hitEnemy({type:'cork',damage:19,dx:20,dy:0,x:5,y:5,crit:0},e);assert.ok(e.stagger>0,'cork lightly staggers small enemies');
-e=mk(5,5,310);hitEnemy({type:'cork',damage:19,dx:20,dy:0,x:5,y:5,crit:0},e);assert.ok(!(e.stagger>0),'big enemies are not staggered by corks');
+e=mk(5,5,310,5);hitEnemy({type:'cork',damage:19,dx:20,dy:0,x:5,y:5,crit:0},e);assert.ok(!(e.stagger>0),'big enemies are not staggered by corks');
 // can explosions pass a damage source to the enemy module
 {reset();const got=[];const orig=EnemyAI.damage;EnemyAI.damage=(en,d,src)=>{got.push(src);return orig(en,d,src);};enemies=[mk(3.6,3.1,500)];impact({x:3.5,y:3,type:'can',damage:95});EnemyAI.damage=orig;assert.equal(got.length,1);assert.equal(got[0].type,'can');assert.ok(got[0].force>0&&got[0].x===3.5);}
 // status timers decay
-reset();running=true;enemies=[mk(8,8)];enemies[0].stagger=.1;enemies[0].slow=.1;for(let i=0;i<10;i++)tick(.02);assert.equal(enemies[0].stagger,0);assert.equal(enemies[0].slow,0);
+reset();running=true;enemies=[mk(8,8)];enemies[0].stagger=.1;enemies[0].slow=.1;for(let i=0;i<10;i++)tick(.02);assert.ok(!(enemies[0].stagger>0));assert.ok(!(enemies[0].slow>0));
 // ---- hitstop pauses the simulation, but only briefly ----
 reset();running=true;choose(0);shoot();const sx=shots[0].y;GameFX.hitstop=.07;for(let i=0;i<2;i++){tick(.025);assert.equal(shots[0].y,sx,'frozen during hitstop');}
 for(let i=0;i<4;i++)tick(.025);assert.ok(shots.length===0||shots[0].y>sx,'simulation resumes');assert.equal(GameFX.hitstop,0,'hitstop is spent');

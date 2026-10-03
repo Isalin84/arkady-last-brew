@@ -51,6 +51,66 @@ const SceneArt=(()=>{
  }
  });}
  function monster(type,frame=0){return art('monster'+type+frame,g=>{
+ // Radial gradients fall back to a flat colour where the 2D context has none (node test stub).
+ const rad=(x,y,r,stops,fallback)=>{const d=g.createRadialGradient(x,y,0,x,y,r);if(!d?.addColorStop)return fallback;for(const [p,c] of stops)d.addColorStop(p,c);return d;};
+ if(type===11&&String(frame).startsWith('glob')){
+ // Spitter glob: glowing yeast blob with a drip tail, two wobble frames.
+ const w=frame==='glob1'?1:0;
+ oval(g,64,64,44,40,'#d8f06a1c',null,0);oval(g,64,64,33,30,'#d8f06a3a',null,0);
+ oval(g,64,66,22+w*2,19-w*2,rad(57,58,26,[[0,'#fbffd8'],[.4,'#d4ec5a'],[1,'#6f8f22']],'#c6e04c'),'#3f5a16',3);
+ oval(g,56,58,8,5,'#fbffe6',null,0);oval(g,75,73,4,3,'#effFb0',null,0);oval(g,49,75,3,3,'#effFb0',null,0);oval(g,70,57,2,2,'#ffffff',null,0);
+ oval(g,64,90+w*4,5,6+w,'#b5d23e','#3f5a16',2);oval(g,64,102+w*6,3,3,'#b5d23e',null,0);
+ return;
+ }
+ if(type===11){
+ // Yeast spitter: bulbous sac with budding cells, three eyes and a puckered nozzle. Frame 2 = inflated telegraph.
+ const inf=frame===2?1:0,p=frame===1?1:0,cy=68-inf*5,rx=33+inf*10+p*2,ry=35+inf*8-p;
+ oval(g,64,119,42+inf*6,7,'#0006',null,0);oval(g,64,113,34,7,'#7e9132','#3e4a18',2);oval(g,48,112,5,2,'#c3d86a',null,0);
+ for(const s of [-1,1])line(g,[[64+s*16,cy+ry-10],[64+s*(28+p*3),108],[64+s*40,114]],'#55632a',7);
+ oval(g,64-rx+3+inf*4,cy+20,12,11,rad(60-rx,cy+16,14,[[0,'#ece6a0'],[1,'#a29a46']],'#c3bb62'),'#4a5220',2);
+ oval(g,64+rx-3-inf*3,cy+24,10,9,rad(62+rx,cy+20,12,[[0,'#ece6a0'],[1,'#a29a46']],'#c3bb62'),'#4a5220',2);
+ oval(g,64-rx*.5,cy-ry+5,8,7,'#d4cc78','#4a5220',2);oval(g,64+rx*.62,cy-ry+9,6,5,'#d4cc78','#4a5220',2);
+ oval(g,64,cy,rx,ry,rad(52,cy-16,rx+16,[[0,inf?'#fffbd0':'#f4eea6'],[.5,inf?'#e6e486':'#cbc65c'],[1,'#7a772a']],'#c9c45a'),'#3d4a1a',3);
+ for(const [a,b] of [[-1,.2],[-.6,.85],[.55,-.5],[1,.35],[.25,.95]])line(g,[[64+rx*.18*a,cy+ry*.12*b],[64+rx*.55*a+3,cy+ry*.48*b-2],[64+rx*.86*a,cy+ry*.74*b]],inf?'#d9774c':'#958f3e',2);
+ for(const [x,y,r] of [[-.55,.15,4],[.45,.45,3],[.62,-.2,3],[-.3,.62,3]])oval(g,64+rx*x,cy+ry*y,r,r*.8,'#a29c4a88',null,0);
+ oval(g,64-rx*.38,cy-ry*.52,rx*.26,ry*.15,'#ffffff66',null,0);
+ if(inf)for(const [x,y] of [[-.8,-.45],[.84,-.3],[.7,.6]])oval(g,64+rx*x,cy+ry*y,2,3,'#e9f6ff',null,0);
+ for(const [x,y,r] of [[50,cy-15,6],[64,cy-21,7],[78,cy-15,6]]){oval(g,x,y,r,r-1,'#f3eaa4','#2c3313',2);oval(g,x,y+1,inf?1.5:2,inf?2:r-3,inf?'#d0442a':'#1f1a0c',null,0);if(inf)line(g,[[x-r,y-3],[x+r,y-3]],'#3d4a1a',3);}
+ if(inf)oval(g,64,cy+16,26,22,'#e9ff7a44',null,0);
+ oval(g,64,cy+15,16+inf*4,13+inf*3,'#aaa24a','#3d4a1a',3);
+ for(let i=0;i<8;i++){const a=i*Math.PI/4;line(g,[[64+Math.cos(a)*(11+inf*3),cy+15+Math.sin(a)*(9+inf*2)],[64+Math.cos(a)*(15+inf*4),cy+15+Math.sin(a)*(12+inf*3)]],'#6f6a2c',2);}
+ oval(g,64,cy+16,10+inf*3,8+inf*2,'#26260f',null,0);oval(g,64,cy+18,6+inf*4,4+inf*3,inf?'#f0ff8a':'#9bbb34',null,0);
+ if(p)oval(g,71,cy+31,2,4,'#a9c83a',null,0);
+ return;
+ }
+ if(type===12){
+ // «Солодовый король»: hulking malt sack with grain-auger arms and a crown of copper funnels. Frames 0–1 walk, 2 attack; +3 = enraged.
+ const f=frame%3,rage=frame>=3,up=f===2,sw=f===1?3:0,eye=rage?'#ff6a2a':'#ffd36a',glow=rage?'#ff3b1f55':'#ffc24a40';
+ oval(g,64,122,60,6,'#0007',null,0);
+ for(const x of [42,86]){box(g,x-10,98,20,18,'#6d4f2c');box(g,x-13,114,26,6,'#3b2a18');line(g,[[x-10,104],[x+10,104]],'#3b2a18',2);line(g,[[x-6,99],[x-6,113]],'#8a6a3e',1);}
+ const arm=(sx,sy,ex,ey)=>{line(g,[[sx,sy],[ex,ey]],'#1e2a2e',14);line(g,[[sx,sy],[ex,ey]],'#7f979b',9);line(g,[[sx-1,sy-1],[ex-1,ey-1]],'#c9d8d4',2);for(let i=1;i<8;i++){const t=i/8,x=sx+(ex-sx)*t,y=sy+(ey-sy)*t;line(g,[[x-5,y-3],[x+5,y+3]],'#d88f45',3);}
+  oval(g,ex,ey,9,8,metal(g,true),'#3b2414',2);for(const k of [-1,0,1])line(g,[[ex+k*5,ey+(up?-4:4)],[ex+k*8,ey+(up?-12:12)]],'#efdca4',3);};
+ if(up){arm(34,56,14,12);arm(94,56,114,12);}else{arm(34,58,12-sw,92+sw);arm(94,58,116+sw,92-sw);}
+ g.beginPath();g.moveTo(45,30);g.bezierCurveTo(24,36,19,70,24,95);g.bezierCurveTo(29,113,99,113,104,95);g.bezierCurveTo(109,70,104,36,83,30);g.closePath();
+ const sack=g.createLinearGradient(20,0,108,0);[[0,'#4e351c'],[.28,'#b08850'],[.5,'#cfa86a'],[.74,'#9c7642'],[1,'#4a301a']].forEach(([p,c])=>sack.addColorStop(p,c));
+ g.fillStyle=sack;g.fill();g.strokeStyle='#2a1c0e';g.lineWidth=3;g.stroke();
+ g.save();g.clip();for(let y=32;y<112;y+=4)box(g,18,y,92,1,'#00000016');for(let x=20;x<108;x+=5)box(g,x,30,1,82,'#ffffff0d');g.restore();
+ box(g,82,80,16,13,'#8a6a3e');for(let x=83;x<98;x+=4){line(g,[[x,79],[x+2,82]],'#ecd9a4',1);line(g,[[x,91],[x+2,94]],'#ecd9a4',1);}
+ g.fillStyle='#3a2814';g.font='bold 9px monospace';g.textAlign='center';g.fillText('СОЛОД',58,101);g.font='bold 7px monospace';g.fillText('№4',90,89);
+ for(const [x,y] of [[28,90],[26,97],[30,103],[100,92],[103,99]])oval(g,x,y+sw,2,3,'#e8c86e',null,0);
+ if(f===1)for(const [x,y] of [[30,112],[96,110],[64,114]])oval(g,x,y,1.5,2.5,'#e8c86e',null,0);
+ if(rage)for(const pts of [[[33,60],[39,69],[35,80],[41,88]],[[95,58],[89,70],[94,80]],[[70,96],[76,104]]])line(g,pts,'#ff7a2a',2);
+ line(g,[[42,34],[86,34]],'#d9c08a',4);oval(g,52,36,3,3,'#d9c08a',null,0);line(g,[[52,38],[49,46]],'#d9c08a',2);
+ box(g,38,22,52,10,'#d4af37');box(g,38,22,52,2,'#fff0b0');box(g,38,30,52,2,'#7a5a1a');for(let x=42;x<90;x+=8)oval(g,x,27,1.5,1.5,'#7a5a1a',null,0);
+ for(const [x,h] of [[47,13],[64,19],[81,13]]){const top=22-h,cu=g.createLinearGradient(x-10,0,x+10,0);[[0,'#55301e'],[.35,'#efbe77'],[.6,'#cb854c'],[1,'#4e2f22']].forEach(([p,c])=>cu.addColorStop(p,c));
+  g.beginPath();g.moveTo(x-10,top);g.lineTo(x+10,top);g.lineTo(x+3,22);g.lineTo(x-3,22);g.closePath();g.fillStyle=cu;g.fill();g.strokeStyle='#3b2414';g.lineWidth=1.5;g.stroke();
+  oval(g,x,top,10,3,'#f0c483','#3b2414',1.5);oval(g,x,top,7,1.8,rage?'#ff7a2a':'#2a160c',null,0);if(f===1||rage)oval(g,x+2,top-5,5,3,rage?'#ff9a4a55':'#e8d8b070',null,0);}
+ for(const x of [48,80]){oval(g,x,52,15,12,glow,null,0);oval(g,x,52,9,8,eye,'#2a1c0e',2);oval(g,x-2,50,3,2,'#fffbe0',null,0);line(g,[[x,47],[x,57]],'#3a1206',3);}
+ line(g,[[34,40],[58,47]],'#2a1c0e',6);line(g,[[94,40],[70,47]],'#2a1c0e',6);
+ oval(g,64,76,25,up?14:8,'#1b0f08','#2a1c0e',2);if(up){oval(g,64,79,17,8,rage?'#ff5a1acc':'#ffb43acc',null,0);oval(g,64,80,9,4,rage?'#ffd0a0':'#fff0b0',null,0);}
+ for(let x=45;x<85;x+=7){oval(g,x,71,2.5,4,'#f0dc9a','#5a4320',1);if(up)oval(g,x+3,88,2.5,4,'#f0dc9a','#5a4320',1);}
+ return;
+ }
  const dy=frame?2:0;oval(g,64,118,46,7,'#0006',null,0);
  line(g,[[42,96],[30-frame*5,115],[16,116]],'#35504e',9);line(g,[[84,96],[99+frame*4,114],[111,115]],'#35504e',9);
  if(type===3){
