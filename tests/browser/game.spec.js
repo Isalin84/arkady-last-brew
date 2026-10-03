@@ -31,3 +31,106 @@ test('real page starts, updates damage portrait and builds a persistent share ca
  expect(await page.evaluate(()=>GameScore.records().length)).toBe(1);
  expect(errors).toEqual([]);
 });
+
+const overlaps=(a,b)=>a.x<b.x+b.width&&b.x<a.x+a.width&&a.y<b.y+b.height&&b.y<a.y+a.height;
+
+test('Esc opens the pause panel over the live scene and settings persist across reloads',async({page})=>{
+ const errors=[];page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});page.on('pageerror',error=>errors.push(error.message));
+ await page.goto('/');
+ await expect(page.locator('#pause-panel')).toBeHidden();
+ await page.getByRole('button',{name:/Начать смену/}).click();
+ await expect(page.locator('#hud')).toBeVisible();
+ await page.keyboard.press('Escape');
+ await expect(page.locator('#pause-panel')).toBeVisible();
+ await expect(page.locator('#pause-title')).toContainText('Перерыв');
+ await expect(page.locator('#overlay')).toBeHidden();
+ await expect(page.locator('#resume')).toBeVisible();
+ await expect(page.locator('#restart-level')).toBeVisible();
+ // the audio sliders live in the panel and keep their ids
+ for(const id of ['volume-music','volume-effects','volume-voice'])await expect(page.locator('#'+id)).toBeVisible();
+ await page.locator('#setting-sensitivity').fill('1.8');
+ await page.locator('#setting-quality').selectOption('low');
+ await page.locator('#setting-shake').uncheck();
+ await page.locator('#setting-fps').check();
+ await page.locator('#resume').click();
+ await expect(page.locator('#pause-panel')).toBeHidden();
+ expect(await page.evaluate(()=>running)).toBe(true);
+ await page.reload();
+ await expect(page.locator('#pause-panel')).toBeHidden();
+ await page.getByRole('button',{name:'Настройки'}).click();
+ await expect(page.locator('#pause-panel')).toBeVisible();
+ await expect(page.locator('#pause-title')).toHaveText('Настройки');
+ await expect(page.locator('#resume')).toBeHidden();
+ await expect(page.locator('#setting-sensitivity')).toHaveValue('1.8');
+ await expect(page.locator('#setting-quality')).toHaveValue('low');
+ await expect(page.locator('#setting-shake')).not.toBeChecked();
+ await expect(page.locator('#setting-fps')).toBeChecked();
+ expect(await page.evaluate(()=>GameSettings.get('sensitivity'))).toBe(1.8);
+ await page.keyboard.press('Escape');
+ await expect(page.locator('#pause-panel')).toBeHidden();
+ await expect(page.getByRole('button',{name:/Начать смену/})).toBeVisible();
+ expect(errors).toEqual([]);
+});
+
+test('difficulty picker keeps the veteran locked until Stella is rescued',async({page})=>{
+ await page.goto('/');
+ const veteran=page.locator('[data-difficulty="veteran"]');
+ await expect(veteran).toHaveAttribute('aria-disabled','true');
+ await page.locator('[data-difficulty="rookie"]').click();
+ expect(await page.evaluate(()=>GameSettings.get('difficulty'))).toBe('rookie');
+ await veteran.click({force:true}); // aria-disabled buttons are still clickable for real users
+ expect(await page.evaluate(()=>GameSettings.get('difficulty'))).toBe('rookie');
+ await expect(page.locator('#difficulty-hint')).toContainText('Открывается после спасения Стеллы');
+});
+
+test('fullscreen button follows the Fullscreen API and F toggles the stage',async({page})=>{
+ await page.goto('/');
+ const supported=await page.evaluate(()=>Boolean(document.fullscreenEnabled||document.webkitFullscreenEnabled));
+ if(!supported){await expect(page.locator('#fullscreen')).toBeHidden();return;}
+ await expect(page.locator('#fullscreen')).toBeVisible();
+ await page.getByRole('button',{name:/Начать смену/}).click();
+ await page.keyboard.press('f');
+ await expect.poll(()=>page.evaluate(()=>document.fullscreenElement&&document.fullscreenElement.id)).toBe('stage');
+ const view=await page.locator('#view').boundingBox();
+ expect(Math.abs(view.width/view.height-16/9)).toBeLessThan(.02);
+ await page.keyboard.press('f');
+ await expect.poll(()=>page.evaluate(()=>document.fullscreenElement)).toBeNull();
+});
+
+test.describe('touch layouts',()=>{
+ for(const [name,size] of [['landscape',{width:844,height:390}],['portrait',{width:390,height:844}]]){
+  test.describe(name,()=>{
+   test.use({viewport:size,hasTouch:true,isMobile:true});
+   test('joystick and action buttons never overlap subtitles',async({page},testInfo)=>{
+    const errors=[];page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});page.on('pageerror',error=>errors.push(error.message));
+    await page.goto('/');
+    expect(await page.evaluate(()=>matchMedia('(pointer:coarse)').matches)).toBe(true);
+    await expect(page.locator('#joystick')).toBeHidden();
+    await expect(page.locator('.bottomline')).toBeHidden();
+    await page.locator('#start').tap();
+    await expect(page.locator('#hud')).toBeVisible();
+    for(const id of ['#joystick','#touchfire','#touchuse','#touchswap'])await expect(page.locator(id)).toBeVisible();
+    await page.evaluate(()=>{const s=document.querySelector('#subtitle');s.hidden=false;s.textContent='Аркадий: Ну что, Аркадий. Ещё одна ночная смена, и снова весь цех против меня одного.';});
+    const sub=await page.locator('#subtitle').boundingBox();
+    for(const id of ['#joystick','#touchfire','#touchuse','#touchswap','#touchpause']){const box=await page.locator(id).boundingBox();expect(overlaps(sub,box),id+' overlaps the subtitle').toBe(false);}
+    const vp=page.viewportSize();
+    for(const id of ['#joystick','#touchfire','#touchuse','#touchswap']){const box=await page.locator(id).boundingBox();expect(box.x).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(vp.width+1);}
+    // dragging the joystick drives analog movement
+    const joy=await page.locator('#joystick').boundingBox();
+    await page.evaluate(({x,y,w})=>{const el=document.querySelector('#joystick');const p=(type,cx,cy)=>el.dispatchEvent(new PointerEvent(type,{pointerId:3,clientX:cx,clientY:cy,bubbles:true,pointerType:'touch'}));p('pointerdown',x,y);p('pointermove',x,y-w*.45);},{x:joy.x+joy.width/2,y:joy.y+joy.height/2,w:joy.width});
+    expect(await page.evaluate(()=>GameUI.touchMove.y)).toBeGreaterThan(.8);
+    await page.evaluate(()=>document.querySelector('#joystick').dispatchEvent(new PointerEvent('pointerup',{pointerId:3,bubbles:true})));
+    expect(await page.evaluate(()=>GameUI.touchMove.y)).toBe(0);
+    await page.screenshot({path:testInfo.outputPath(`touch-${name}.png`)});
+    // pausing hides the controls and opens the panel
+    await page.locator('#touchpause').tap();
+    await expect(page.locator('#pause-panel')).toBeVisible();
+    await expect(page.locator('#joystick')).toBeHidden();
+    await page.locator('#resume').tap();
+    await expect(page.locator('#pause-panel')).toBeHidden();
+    await expect(page.locator('#joystick')).toBeVisible();
+    expect(errors).toEqual([]);
+   });
+  });
+ }
+});
