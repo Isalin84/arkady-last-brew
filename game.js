@@ -36,7 +36,7 @@ function start(){
  else if(!started||won)reset();
  started=true;running=true;renderRequested=true;$('#overlay').hidden=true;GameUI.onStart();$('#hud').hidden=false;$('#crosshair').style.display='block';if(fresh)$('#status').textContent=LEVELS[levelIndex].status;updateHUD();
  canvas.requestPointerLock?.()?.catch(()=>{if(running&&typeof matchMedia==='function'&&matchMedia('(pointer:fine)').matches)toast('Кликни по экрану, чтобы захватить мышь');});toast(LEVELS[levelIndex].name+' · '+levelTotal+' монстров');
- GameAudio.music('game');GameAudio.resume().then(()=>{if(running&&fresh)GameAudio.say(event,true);});
+ GameAudio.music('game');GameAudio.unlockMusic?.();GameAudio.resume().then(()=>{if(running&&fresh)GameAudio.say(event,true);});
 }
 function pause(){if(!running)return;$('#radio-message').hidden=true;GameAudio.pause();GameAudio.music('menu');running=false;renderRequested=true;fire=false;keys.clear();GameUI.pausePanel(true);document.exitPointerLock?.();}
 // «Заново этот цех» from the pause panel: back to the level checkpoint without a death; in veteran the run restarts from level 1.

@@ -25,6 +25,8 @@ const GameAudio=(()=>{
  }
  function play(name){const d=decks[name];if(!d||!enabled||hidden)return;clearTimeout(d.timer);d.timer=0;d.el.preload='auto';if(d.el.paused&&!(d.el.ended&&!d.el.loop))d.el.play()?.catch?.(()=>{});d.g.gain.setTargetAtTime(TRACKS[name].gain,ac.currentTime,FADE/4);}
  function fadeOut(name){const d=decks[name];if(!d||d.el.paused)return;d.g.gain.setTargetAtTime(0,ac.currentTime,FADE/4);clearTimeout(d.timer);d.timer=setTimeout(()=>{d.timer=0;if(song!==name)d.el.pause();},FADE*1000+250);}
+ // iOS only lets a media element start from code after it was played once inside a tap: prime the one-shots during the start tap.
+ function unlockMusic(){if(!ac||typeof matchMedia!=='function'||!matchMedia('(pointer:coarse)').matches)return;for(const name of ['victory','defeat']){const d=deck(name,'metadata');if(!d.el.paused)continue;d.el.play()?.then?.(()=>{if(song!==name){d.el.pause();try{d.el.currentTime=0;}catch{}}})?.catch?.(()=>{});}}
  function silence(){if(!ac)return;for(const d of Object.values(decks)){clearTimeout(d.timer);d.timer=0;d.el.pause();d.g.gain.setTargetAtTime(0,ac.currentTime,.03);}}
  // music('menu'|'game'|'victory'|'defeat') crossfades to that track, music(null) fades out. Loops keep their position; one-shots and a rewound game track start from 0.
  function music(name=null){
@@ -104,5 +106,5 @@ const GameAudio=(()=>{
  function kill(){sample('can',{volume:.22,rate:.5,offset:.3,duration:.35});}
  function kiss(){sample('kiss',{volume:.9});}
  function voiceSeconds(){return ac?Math.max(0,voiceUntil-ac.currentTime):0;}
- return{resume,pause,reset,setLevel,music,get track(){return song;},musicElement:name=>decks[name]?.el||null,monster,vehicle,synth,setEnabled,setVolume,get volumes(){return {...levels};},say,shot,impact,update,hit,kill,kiss,voiceSeconds,lines,get enabled(){return enabled;},get loaded(){return Object.keys(buffers);}};
+ return{resume,pause,reset,setLevel,music,unlockMusic,get track(){return song;},musicElement:name=>decks[name]?.el||null,monster,vehicle,synth,setEnabled,setVolume,get volumes(){return {...levels};},say,shot,impact,update,hit,kill,kiss,voiceSeconds,lines,get enabled(){return enabled;},get loaded(){return Object.keys(buffers);}};
 })();

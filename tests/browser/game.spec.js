@@ -1,8 +1,10 @@
 const {test,expect}=require('@playwright/test');
+// Game scripts run before DOMContentLoaded; the load event may wait on optional Google Fonts.
+const READY={waitUntil:'domcontentloaded'};
 
 test('real page starts, updates damage portrait and builds a persistent share card',async({page},testInfo)=>{
  const errors=[];page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});page.on('pageerror',error=>errors.push(error.message));
- await page.goto('/');
+ await page.goto('/',READY);
  await expect(page.locator('footer')).toContainText('v1.0');
  await page.getByRole('button',{name:/Начать смену/}).click();
  await expect(page.locator('#hud')).toBeVisible();
@@ -27,14 +29,14 @@ test('real page starts, updates damage portrait and builds a persistent share ca
  const panelBox=await page.locator('#score-panel').boundingBox(),stageBox=await page.locator('#stage').boundingBox();
  expect(panelBox.x).toBeLessThan(stageBox.x+stageBox.width/2);
  await page.setViewportSize({width:390,height:844});await page.screenshot({path:testInfo.outputPath('finale-mobile.png'),fullPage:true});
- await page.reload();
+ await page.reload(READY);
  expect(await page.evaluate(()=>GameScore.records().length)).toBe(1);
  expect(errors).toEqual([]);
 });
 
 test('streamed music follows the title, the shift and the pause',async({page})=>{
  const errors=[];page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});page.on('pageerror',error=>errors.push(error.message));
- await page.goto('/');
+ await page.goto('/',READY);
  expect(await page.evaluate(()=>GameAudio.track)).toBeNull();
  await page.mouse.click(8,8); // any gesture on the title screen
  await expect.poll(()=>page.evaluate(()=>GameAudio.track)).toBe('menu');
@@ -62,7 +64,7 @@ const overlaps=(a,b)=>a.x<b.x+b.width&&b.x<a.x+a.width&&a.y<b.y+b.height&&b.y<a.
 
 test('Esc opens the pause panel over the live scene and settings persist across reloads',async({page})=>{
  const errors=[];page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});page.on('pageerror',error=>errors.push(error.message));
- await page.goto('/');
+ await page.goto('/',READY);
  await expect(page.locator('#pause-panel')).toBeHidden();
  await page.getByRole('button',{name:/Начать смену/}).click();
  await expect(page.locator('#hud')).toBeVisible();
@@ -81,7 +83,7 @@ test('Esc opens the pause panel over the live scene and settings persist across 
  await page.locator('#resume').click();
  await expect(page.locator('#pause-panel')).toBeHidden();
  expect(await page.evaluate(()=>running)).toBe(true);
- await page.reload();
+ await page.reload(READY);
  await expect(page.locator('#pause-panel')).toBeHidden();
  await page.getByRole('button',{name:'Настройки'}).click();
  await expect(page.locator('#pause-panel')).toBeVisible();
@@ -99,7 +101,7 @@ test('Esc opens the pause panel over the live scene and settings persist across 
 });
 
 test('difficulty picker keeps the veteran locked until Stella is rescued',async({page})=>{
- await page.goto('/');
+ await page.goto('/',READY);
  const veteran=page.locator('[data-difficulty="veteran"]');
  await expect(veteran).toHaveAttribute('aria-disabled','true');
  await page.locator('[data-difficulty="rookie"]').click();
@@ -110,7 +112,7 @@ test('difficulty picker keeps the veteran locked until Stella is rescued',async(
 });
 
 test('fullscreen button follows the Fullscreen API and F toggles the stage',async({page})=>{
- await page.goto('/');
+ await page.goto('/',READY);
  const supported=await page.evaluate(()=>Boolean(document.fullscreenEnabled||document.webkitFullscreenEnabled));
  if(!supported){await expect(page.locator('#fullscreen')).toBeHidden();return;}
  await expect(page.locator('#fullscreen')).toBeVisible();
@@ -129,7 +131,7 @@ test.describe('touch layouts',()=>{
    test.use({viewport:size,hasTouch:true,isMobile:true});
    test('joystick and action buttons never overlap subtitles',async({page},testInfo)=>{
     const errors=[];page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});page.on('pageerror',error=>errors.push(error.message));
-    await page.goto('/');
+    await page.goto('/',READY);
     expect(await page.evaluate(()=>matchMedia('(pointer:coarse)').matches)).toBe(true);
     await expect(page.locator('#joystick')).toBeHidden();
     await expect(page.locator('.bottomline')).toBeHidden();
