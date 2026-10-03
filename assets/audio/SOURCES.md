@@ -19,7 +19,7 @@ Generated at the user's request in their ElevenLabs account, using the existing 
 
 ## Background music
 
-`music/arkady-hunting.mp3` is derived from the user-provided `voice/Arkady Hunting.m4a` (228.32 s), supplied specifically as this game's background music. Original retained. Browser copy normalized to -18 LUFS / -2 dBTP, 44.1 kHz, 160 kbps MP3 with short edge fades. No external music source was substituted.
+`music/arkady-hunting.mp3` is derived from the user-provided `voice/Arkady Hunting.m4a` (228.32 s), supplied specifically as this game's background music. Original retained. Browser copy normalized to -18 LUFS / -2 dBTP, 44.1 kHz, 160 kbps MP3 with short edge fades. No external music source was substituted. Since v1.0 the browser copy is the streamed `music/arkady-hunting.webm` / `.m4a` pair described below; the MP3 was removed from the repository.
 
 ## v0.5 — two production departments (2026-09-15)
 
@@ -52,3 +52,25 @@ Generated at the user's request in their ElevenLabs account, using the existing 
 
 - `audio-manifest.js` binds every spoken line to its exact numbered MP3. Retired clips `14.mp3`, `29.mp3` and `43.mp3` remain in the source archive but are not loaded or published.
 - The browser loads only the current chapter's speech pack. A failed request is eligible for retry on the next resume instead of staying permanently silent.
+
+## v1.0 — four music tracks, streamed (2026-10-03)
+
+All four tracks were supplied by the user as their own recordings for this game. The source MP3s (`music/Arkady is  Back.mp3`, `music/Lost Arkady.mp3`, `music/Victorious Arkady.mp3`, and `voice/Arkady Hunting.m4a` for the in-game track) stay outside Git (`.gitignore`) and are not published.
+
+| Track | Browser files | Length | Plays | Loudness | Gain |
+|---|---|---|---|---|---|
+| Arkady is Back | `music/menu-arkady-is-back.webm` / `.m4a` | 3:03 | title screen (after the first click or key) and pause, looped | −15.6 LUFS | 0.81 |
+| Arkady Hunting | `music/arkady-hunting.webm` / `.m4a` | 3:48 | during the shift, looped; continues after a pause, restarts on a new shift, retry or next department | −17.4 LUFS | 1 |
+| Victorious Arkady | `music/victory-arkady.webm` / `.m4a` | 2:29 | department cleared and Stella rescued, once | −16.0 LUFS | 0.85 |
+| Lost Arkady | `music/defeat-arkady.webm` / `.m4a` | 2:42 | death and failed veteran shift, once | −16.4 LUFS | 0.89 |
+
+- Formats: Opus 96 kbps VBR in WebM (primary, chosen when `canPlayType('audio/webm; codecs="opus"')` answers yes) and AAC 128 kbps in M4A with the index at the front (fallback, e.g. older Safari). Cover art and metadata stripped. WebM total 8.9 MB versus 16.6 MB for the source MP3s; each browser downloads only one format.
+- Loudness was measured as integrated LUFS; the per-track gains in `audio.js` bring every track to the in-game track's level instead of re-encoding the masters.
+- Commands (FFmpeg, macOS AudioToolbox AAC encoder):
+
+```sh
+ffmpeg -i SRC -vn -map_metadata -1 -c:a libopus -b:a 96k -vbr on -application audio OUT.webm
+ffmpeg -i SRC -vn -map_metadata -1 -c:a aac_at -aac_at_mode cvbr -b:a 128k -movflags +faststart OUT.m4a
+```
+
+- Playback: one streaming `<audio>` element per track routed through Web Audio (track gain → music bus), 0.6 s crossfades. Music starts after the first seconds arrive instead of after a full download and decode; effects and speech start loading once the current track can play (at most 1.5 s later).

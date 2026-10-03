@@ -2,6 +2,9 @@
 _site/
 assets/audio/voice/Arkady Voice.mp3
 assets/audio/voice/Arkady Hunting.m4a
+assets/audio/music/Arkady is  Back.mp3
+assets/audio/music/Lost Arkady.mp3
+assets/audio/music/Victorious Arkady.mp3
 assets/audio/universfield-*.mp3
 assets/art/arkady-character-photo-card-*.png
 assets/stella.png
@@ -11,3 +14,5 @@ assets/source-private/
 node_modules/
 test-results/
 playwright-report/
+.claude/worktrees/
+node_modules

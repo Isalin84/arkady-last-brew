@@ -28,26 +28,38 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Check game
         run: |
-          node --check game.js
-          node --check audio.js
+          node --check weapons-art.js
           node --check audio-manifest.js
+          node --check audio.js
           node --check score.js
           node --check score-card.js
-          node --check weapons-art.js
+          node --check settings.js
           node --check levels.js
+          node --check progression.js
           node --check scene-art.js
+          node --check renderer.js
+          node --check fx.js
+          node --check enemies.js
+          node --check ui.js
+          node --check game.js
           node tests/game.test.cjs
           node tests/audio.test.cjs
           node tests/score.test.cjs
+          node tests/pages.test.cjs
+          node tests/renderer.test.cjs
+          node tests/fx.test.cjs
+          node tests/enemies.test.cjs
+          node tests/ui.test.cjs
+          node tests/replay.test.cjs
           npm run test:browser
       - name: Assemble website
         run: |
           mkdir -p _site/assets/art/brand _site/assets/audio/voice _site/assets/audio/music _site/assets/audio/sfx
-          cp index.html style.css game.js audio-manifest.js audio.js score.js score-card.js weapons-art.js levels.js scene-art.js _site/
+          cp index.html style.css weapons-art.js audio-manifest.js audio.js score.js score-card.js settings.js levels.js progression.js scene-art.js renderer.js fx.js enemies.js ui.js game.js _site/
           cp assets/art/*.webp _site/assets/art/
           cp assets/art/brand/* _site/assets/art/brand/
           find assets/audio/voice -name '[0-9][0-9].mp3' ! -name '14.mp3' ! -name '29.mp3' ! -name '43.mp3' -exec cp {} _site/assets/audio/voice/ \;
-          cp assets/audio/music/*.mp3 _site/assets/audio/music/
+          cp assets/audio/music/*.webm assets/audio/music/*.m4a _site/assets/audio/music/
           cp assets/audio/sfx/*.mp3 _site/assets/audio/sfx/
           cp assets/audio/SOURCES.md _site/assets/audio/
           touch _site/.nojekyll

@@ -51,6 +51,66 @@ const SceneArt=(()=>{
  }
  });}
  function monster(type,frame=0){return art('monster'+type+frame,g=>{
+ // Radial gradients fall back to a flat colour where the 2D context has none (node test stub).
+ const rad=(x,y,r,stops,fallback)=>{const d=g.createRadialGradient(x,y,0,x,y,r);if(!d?.addColorStop)return fallback;for(const [p,c] of stops)d.addColorStop(p,c);return d;};
+ if(type===11&&String(frame).startsWith('glob')){
+ // Spitter glob: glowing yeast blob with a drip tail, two wobble frames.
+ const w=frame==='glob1'?1:0;
+ oval(g,64,64,44,40,'#d8f06a1c',null,0);oval(g,64,64,33,30,'#d8f06a3a',null,0);
+ oval(g,64,66,22+w*2,19-w*2,rad(57,58,26,[[0,'#fbffd8'],[.4,'#d4ec5a'],[1,'#6f8f22']],'#c6e04c'),'#3f5a16',3);
+ oval(g,56,58,8,5,'#fbffe6',null,0);oval(g,75,73,4,3,'#effFb0',null,0);oval(g,49,75,3,3,'#effFb0',null,0);oval(g,70,57,2,2,'#ffffff',null,0);
+ oval(g,64,90+w*4,5,6+w,'#b5d23e','#3f5a16',2);oval(g,64,102+w*6,3,3,'#b5d23e',null,0);
+ return;
+ }
+ if(type===11){
+ // Yeast spitter: bulbous sac with budding cells, three eyes and a puckered nozzle. Frame 2 = inflated telegraph.
+ const inf=frame===2?1:0,p=frame===1?1:0,cy=68-inf*5,rx=33+inf*10+p*2,ry=35+inf*8-p;
+ oval(g,64,119,42+inf*6,7,'#0006',null,0);oval(g,64,113,34,7,'#7e9132','#3e4a18',2);oval(g,48,112,5,2,'#c3d86a',null,0);
+ for(const s of [-1,1])line(g,[[64+s*16,cy+ry-10],[64+s*(28+p*3),108],[64+s*40,114]],'#55632a',7);
+ oval(g,64-rx+3+inf*4,cy+20,12,11,rad(60-rx,cy+16,14,[[0,'#ece6a0'],[1,'#a29a46']],'#c3bb62'),'#4a5220',2);
+ oval(g,64+rx-3-inf*3,cy+24,10,9,rad(62+rx,cy+20,12,[[0,'#ece6a0'],[1,'#a29a46']],'#c3bb62'),'#4a5220',2);
+ oval(g,64-rx*.5,cy-ry+5,8,7,'#d4cc78','#4a5220',2);oval(g,64+rx*.62,cy-ry+9,6,5,'#d4cc78','#4a5220',2);
+ oval(g,64,cy,rx,ry,rad(52,cy-16,rx+16,[[0,inf?'#fffbd0':'#f4eea6'],[.5,inf?'#e6e486':'#cbc65c'],[1,'#7a772a']],'#c9c45a'),'#3d4a1a',3);
+ for(const [a,b] of [[-1,.2],[-.6,.85],[.55,-.5],[1,.35],[.25,.95]])line(g,[[64+rx*.18*a,cy+ry*.12*b],[64+rx*.55*a+3,cy+ry*.48*b-2],[64+rx*.86*a,cy+ry*.74*b]],inf?'#d9774c':'#958f3e',2);
+ for(const [x,y,r] of [[-.55,.15,4],[.45,.45,3],[.62,-.2,3],[-.3,.62,3]])oval(g,64+rx*x,cy+ry*y,r,r*.8,'#a29c4a88',null,0);
+ oval(g,64-rx*.38,cy-ry*.52,rx*.26,ry*.15,'#ffffff66',null,0);
+ if(inf)for(const [x,y] of [[-.8,-.45],[.84,-.3],[.7,.6]])oval(g,64+rx*x,cy+ry*y,2,3,'#e9f6ff',null,0);
+ for(const [x,y,r] of [[50,cy-15,6],[64,cy-21,7],[78,cy-15,6]]){oval(g,x,y,r,r-1,'#f3eaa4','#2c3313',2);oval(g,x,y+1,inf?1.5:2,inf?2:r-3,inf?'#d0442a':'#1f1a0c',null,0);if(inf)line(g,[[x-r,y-3],[x+r,y-3]],'#3d4a1a',3);}
+ if(inf)oval(g,64,cy+16,26,22,'#e9ff7a44',null,0);
+ oval(g,64,cy+15,16+inf*4,13+inf*3,'#aaa24a','#3d4a1a',3);
+ for(let i=0;i<8;i++){const a=i*Math.PI/4;line(g,[[64+Math.cos(a)*(11+inf*3),cy+15+Math.sin(a)*(9+inf*2)],[64+Math.cos(a)*(15+inf*4),cy+15+Math.sin(a)*(12+inf*3)]],'#6f6a2c',2);}
+ oval(g,64,cy+16,10+inf*3,8+inf*2,'#26260f',null,0);oval(g,64,cy+18,6+inf*4,4+inf*3,inf?'#f0ff8a':'#9bbb34',null,0);
+ if(p)oval(g,71,cy+31,2,4,'#a9c83a',null,0);
+ return;
+ }
+ if(type===12){
+ // «Солодовый король»: hulking malt sack with grain-auger arms and a crown of copper funnels. Frames 0–1 walk, 2 attack; +3 = enraged.
+ const f=frame%3,rage=frame>=3,up=f===2,sw=f===1?3:0,eye=rage?'#ff6a2a':'#ffd36a',glow=rage?'#ff3b1f55':'#ffc24a40';
+ oval(g,64,122,60,6,'#0007',null,0);
+ for(const x of [42,86]){box(g,x-10,98,20,18,'#6d4f2c');box(g,x-13,114,26,6,'#3b2a18');line(g,[[x-10,104],[x+10,104]],'#3b2a18',2);line(g,[[x-6,99],[x-6,113]],'#8a6a3e',1);}
+ const arm=(sx,sy,ex,ey)=>{line(g,[[sx,sy],[ex,ey]],'#1e2a2e',14);line(g,[[sx,sy],[ex,ey]],'#7f979b',9);line(g,[[sx-1,sy-1],[ex-1,ey-1]],'#c9d8d4',2);for(let i=1;i<8;i++){const t=i/8,x=sx+(ex-sx)*t,y=sy+(ey-sy)*t;line(g,[[x-5,y-3],[x+5,y+3]],'#d88f45',3);}
+  oval(g,ex,ey,9,8,metal(g,true),'#3b2414',2);for(const k of [-1,0,1])line(g,[[ex+k*5,ey+(up?-4:4)],[ex+k*8,ey+(up?-12:12)]],'#efdca4',3);};
+ if(up){arm(34,56,14,12);arm(94,56,114,12);}else{arm(34,58,12-sw,92+sw);arm(94,58,116+sw,92-sw);}
+ g.beginPath();g.moveTo(45,30);g.bezierCurveTo(24,36,19,70,24,95);g.bezierCurveTo(29,113,99,113,104,95);g.bezierCurveTo(109,70,104,36,83,30);g.closePath();
+ const sack=g.createLinearGradient(20,0,108,0);[[0,'#4e351c'],[.28,'#b08850'],[.5,'#cfa86a'],[.74,'#9c7642'],[1,'#4a301a']].forEach(([p,c])=>sack.addColorStop(p,c));
+ g.fillStyle=sack;g.fill();g.strokeStyle='#2a1c0e';g.lineWidth=3;g.stroke();
+ g.save();g.clip();for(let y=32;y<112;y+=4)box(g,18,y,92,1,'#00000016');for(let x=20;x<108;x+=5)box(g,x,30,1,82,'#ffffff0d');g.restore();
+ box(g,82,80,16,13,'#8a6a3e');for(let x=83;x<98;x+=4){line(g,[[x,79],[x+2,82]],'#ecd9a4',1);line(g,[[x,91],[x+2,94]],'#ecd9a4',1);}
+ g.fillStyle='#3a2814';g.font='bold 9px monospace';g.textAlign='center';g.fillText('СОЛОД',58,101);g.font='bold 7px monospace';g.fillText('№4',90,89);
+ for(const [x,y] of [[28,90],[26,97],[30,103],[100,92],[103,99]])oval(g,x,y+sw,2,3,'#e8c86e',null,0);
+ if(f===1)for(const [x,y] of [[30,112],[96,110],[64,114]])oval(g,x,y,1.5,2.5,'#e8c86e',null,0);
+ if(rage)for(const pts of [[[33,60],[39,69],[35,80],[41,88]],[[95,58],[89,70],[94,80]],[[70,96],[76,104]]])line(g,pts,'#ff7a2a',2);
+ line(g,[[42,34],[86,34]],'#d9c08a',4);oval(g,52,36,3,3,'#d9c08a',null,0);line(g,[[52,38],[49,46]],'#d9c08a',2);
+ box(g,38,22,52,10,'#d4af37');box(g,38,22,52,2,'#fff0b0');box(g,38,30,52,2,'#7a5a1a');for(let x=42;x<90;x+=8)oval(g,x,27,1.5,1.5,'#7a5a1a',null,0);
+ for(const [x,h] of [[47,13],[64,19],[81,13]]){const top=22-h,cu=g.createLinearGradient(x-10,0,x+10,0);[[0,'#55301e'],[.35,'#efbe77'],[.6,'#cb854c'],[1,'#4e2f22']].forEach(([p,c])=>cu.addColorStop(p,c));
+  g.beginPath();g.moveTo(x-10,top);g.lineTo(x+10,top);g.lineTo(x+3,22);g.lineTo(x-3,22);g.closePath();g.fillStyle=cu;g.fill();g.strokeStyle='#3b2414';g.lineWidth=1.5;g.stroke();
+  oval(g,x,top,10,3,'#f0c483','#3b2414',1.5);oval(g,x,top,7,1.8,rage?'#ff7a2a':'#2a160c',null,0);if(f===1||rage)oval(g,x+2,top-5,5,3,rage?'#ff9a4a55':'#e8d8b070',null,0);}
+ for(const x of [48,80]){oval(g,x,52,15,12,glow,null,0);oval(g,x,52,9,8,eye,'#2a1c0e',2);oval(g,x-2,50,3,2,'#fffbe0',null,0);line(g,[[x,47],[x,57]],'#3a1206',3);}
+ line(g,[[34,40],[58,47]],'#2a1c0e',6);line(g,[[94,40],[70,47]],'#2a1c0e',6);
+ oval(g,64,76,25,up?14:8,'#1b0f08','#2a1c0e',2);if(up){oval(g,64,79,17,8,rage?'#ff5a1acc':'#ffb43acc',null,0);oval(g,64,80,9,4,rage?'#ffd0a0':'#fff0b0',null,0);}
+ for(let x=45;x<85;x+=7){oval(g,x,71,2.5,4,'#f0dc9a','#5a4320',1);if(up)oval(g,x+3,88,2.5,4,'#f0dc9a','#5a4320',1);}
+ return;
+ }
  const dy=frame?2:0;oval(g,64,118,46,7,'#0006',null,0);
  line(g,[[42,96],[30-frame*5,115],[16,116]],'#35504e',9);line(g,[[84,96],[99+frame*4,114],[111,115]],'#35504e',9);
  if(type===3){
@@ -115,4 +175,83 @@ const SceneArt=(()=>{
  box(g,0,0,128,128,'#1c313a');for(let x=8;x<128;x+=12)box(g,x,5,3,120,'#506972');box(g,7,6,114,5,'#d8b349');label(g,'СОЛОДОВНЯ',64,47,110);label(g,'СИЛОС 04',64,67,96);g.fillStyle='#ecd78c';g.font='bold 32px monospace';g.textAlign='center';g.fillText('→',64,105);
  });
  return{prop,monster,forklift,wall,packWall,rack,warehouseWall,maltWall,siloWall,maltDoor};
+})();
+// Floor and ceiling surfaces per hall: 128px canvases tiled once per map cell; the renderer picks a variant per cell.
+(()=>{
+ const cache={};
+ function surface(key,paint){if(cache[key])return cache[key];const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');let s=key.split('').reduce((a,ch)=>a*31+ch.charCodeAt(0)|0,7)>>>0||1;const rnd=()=>(s=(s*16807)%2147483647)/2147483647;paint(g,rnd);return cache[key]=c;}
+ const box=(g,x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+ const speck=(g,rnd,n,colors,w=1,h=1)=>{for(let i=0;i<n;i++){g.fillStyle=colors[i%colors.length];g.fillRect(rnd()*128|0,rnd()*128|0,w,h);}};
+ const blob=(g,x,y,rx,ry,c)=>{g.fillStyle=c;g.beginPath();g.ellipse(x,y,rx,ry,0,0,Math.PI*2);g.fill();};
+ // Draw a shape at all 9 wrapped offsets so it tiles seamlessly across cell edges.
+ const wrap=fn=>{for(const dx of [-128,0,128])for(const dy of [-128,0,128])fn(dx,dy);};
+ function tray(g,x){box(g,x,0,22,128,'#3f4a4c');box(g,x+2,0,18,128,'#1d2526');for(let y=6;y<128;y+=16)box(g,x,y,22,2,'#5f6b6c');for(const [o,c] of [[5,'#2d3a3c'],[9,'#4e2a22'],[13,'#203a52'],[16,'#2d3a3c']])box(g,x+o,0,2,128,c);}
+ function pipe(g,y,h,dark,mid,light){box(g,0,y-1,128,h+2,'#00000055');box(g,0,y,128,h,mid);box(g,0,y+1,128,Math.max(1,h/4|0),light);box(g,0,y+h-2,128,2,dark);for(const x of [24,88]){box(g,x,y-3,5,h+6,'#151b1c');box(g,x,0,2,y-3,'#151b1c');}}
+ function floor(level,variant=0){return surface('floor'+level+'-'+variant,(g,rnd)=>{
+  if(level===0){
+   // Brewhouse: worn quarry tiles, 2×2 per cell, dark grout on the cell grid; drain grates and wort stains.
+   box(g,0,0,128,128,'#3a3225');
+   for(const ty of [0,64])for(const tx of [0,64]){const base=variant===1?(tx===ty?'#6e5f43':'#76664a'):(tx===ty?'#7a6a4c':'#716246');box(g,tx+2,ty+2,61,61,base);box(g,tx+2,ty+2,61,1,'#8f7d59');box(g,tx+2,ty+2,1,61,'#8a7855');box(g,tx+2,ty+62,61,1,'#56492f');box(g,tx+62,ty+2,1,61,'#56492f');
+    for(let i=0;i<5;i++)blob(g,tx+10+rnd()*44,ty+10+rnd()*44,4+rnd()*9,3+rnd()*6,rnd()<.5?'#8d7c5a30':'#4a3e2a26');}
+   box(g,0,0,128,2,'#262117');box(g,0,0,2,128,'#262117');
+   speck(g,rnd,320,['#00000026','#ffffff12','#5a4c33','#8b7a58']);
+   if(variant===2){for(let r=44;r>20;r-=4)blob(g,64,64,r,r,'#00000012');
+    box(g,44,44,40,40,'#59625e');box(g,46,46,36,36,'#141a19');for(let x=49;x<80;x+=6){box(g,x,47,3,34,'#5f6b66');box(g,x,47,1,34,'#93a09a');}box(g,44,44,40,2,'#8c9893');box(g,44,82,40,2,'#2f3634');for(const [x,y] of [[47,47],[79,47],[47,79],[79,79]])box(g,x,y,2,2,'#c1c8bf');}
+   if(variant===3){wrap((dx,dy)=>{blob(g,40+dx,78+dy,26,14,'#4b3520aa');blob(g,62+dx,70+dy,16,10,'#5b4227a0');blob(g,90+dx,86+dy,10,6,'#4b352090');});speck(g,rnd,40,['#c08a4a55','#2a1d1260']);}
+  }else if(level===1){
+   // Packing hall: blue-grey epoxy with seams; yellow safety lines and hatched zones around the conveyor lines.
+   box(g,0,0,128,128,variant===1?'#566e7b':'#5b7380');
+   for(let i=0;i<26;i++){const x=rnd()*128,y=rnd()*128,rx=8+rnd()*22,ry=6+rnd()*16,c=rnd()<.5?'#ffffff08':'#00000010';wrap((dx,dy)=>blob(g,x+dx,y+dy,rx,ry,c));}
+   speck(g,rnd,420,['#4c626e','#6b8490','#ffffff14','#3e525d']);
+   box(g,0,0,128,1,'#3b505c');box(g,0,0,1,128,'#3b505c');box(g,0,1,128,1,'#76909b');box(g,1,0,1,128,'#76909b');
+   const line=y=>{box(g,0,y-1,128,12,'#25333a');box(g,0,y,128,10,'#d8b63c');box(g,0,y,128,2,'#f0d468');speck(g,rnd,60,['#8a7a3a80','#5b738080'],2,1);};
+   if(variant===2)line(112);
+   if(variant===3)line(6);
+   if(variant===4){box(g,0,0,128,128,'#39403f');g.fillStyle='#8f7f3e';for(let k=-128;k<256;k+=32){g.beginPath();g.moveTo(k,0);g.lineTo(k+14,0);g.lineTo(k+142,128);g.lineTo(k+128,128);g.fill();}speck(g,rnd,260,['#39403f','#00000040','#6c6340'],2,1);box(g,0,0,128,3,'#d8b63c');box(g,0,125,128,3,'#d8b63c');}
+  }else if(level===2){
+   // Warehouse: concrete with expansion joints, oil stains and yellow lane lines on cells x = 2, 8, 14, 20.
+   box(g,0,0,128,128,'#686660');
+   for(let i=0;i<30;i++){const x=rnd()*128,y=rnd()*128,rx=6+rnd()*20,ry=5+rnd()*14,c=rnd()<.5?'#ffffff09':'#00000012';wrap((dx,dy)=>blob(g,x+dx,y+dy,rx,ry,c));}
+   speck(g,rnd,700,['#5b5952','#77756d','#4f4d47','#83817a']);
+   g.strokeStyle='#4c4a4566';g.lineWidth=1;g.beginPath();let cx=20+rnd()*88,cy=0;g.moveTo(cx,cy);while(cy<128){cx+=(rnd()-.5)*14;cy+=6+rnd()*10;g.lineTo(cx,cy);}g.stroke();
+   box(g,0,0,128,2,'#42413c');box(g,0,0,2,128,'#42413c');box(g,0,2,128,1,'#7b7972');box(g,2,0,1,128,'#7b7972');box(g,64,0,1,128,'#5a5852');
+   if(variant===1)wrap((dx,dy)=>{blob(g,72+dx,52+dy,24,16,'#26262470');blob(g,60+dx,62+dy,12,9,'#1e1e1c60');});
+   if(variant===2)for(const lx of [1,120])for(const y0 of [6,70]){box(g,lx,y0,7,52,'#e2b53b');box(g,lx,y0,7,2,'#f5d067');for(let i=0;i<18;i++)box(g,lx+(rnd()*7|0),y0+(rnd()*52|0),1+(rnd()*2|0),1,'#8d7a4a');}
+  }else{
+   // Malt house: wooden planks with staggered joints, nails and malt dust in the seams.
+   const tones=['#8e7a56','#857150','#96815b','#7f6c4a'];
+   for(let p=0;p<4;p++){const y=p*32,j=(p*45+17)%128;box(g,0,y,128,32,tones[(p+variant)%4]);for(let i=0;i<7;i++)box(g,0,y+3+(rnd()*27|0),128,1,rnd()<.5?'#00000014':'#ffffff0d');box(g,j,y,2,32,'#4a3d2b');for(const nx of [j-5,j+6])for(const ny of [y+7,y+24])box(g,(nx+128)%128,ny,2,2,'#3a3024');box(g,0,y,128,2,'#4a3d2b');box(g,0,y+2,128,1,'#a8946a');}
+   speck(g,rnd,240,['#d8c48f55','#4a3d2b40','#b39a6a50']);
+   if(variant===1){box(g,0,0,128,4,'#d9bd7a');speck(g,rnd,40,['#e9d295'],2,1);}
+   if(variant===2){blob(g,64,66,40,20,'#b8944d50');blob(g,58,62,26,12,'#d0ad6260');for(let i=0;i<70;i++){const a=rnd()*6.28,r=rnd()*34;blob(g,64+Math.cos(a)*r*1.3,66+Math.sin(a)*r*.6,1.5,1,rnd()<.5?'#d8b66c':'#a88544');}}
+  }
+ });}
+ function ceiling(level,variant=0){return surface('ceiling'+level+'-'+variant,(g,rnd)=>{
+  if(level===0){
+   // Brewhouse: concrete slab between dark joists; copper pipe runs and cable trays.
+   box(g,0,0,128,128,'#33463f');speck(g,rnd,300,['#2a3a35','#3f554d','#00000020']);
+   box(g,0,0,128,14,'#1b2826');box(g,0,14,128,2,'#41574f');box(g,0,12,128,2,'#111917');for(let x=8;x<128;x+=24)box(g,x,5,2,2,'#5d746b');
+   if(variant===1)pipe(g,64,10,'#5a3218','#a8632f','#e5a265');
+   if(variant===2)tray(g,40);
+  }else if(level===1){
+   // Packing: acoustic ceiling grid and galvanized duct runs.
+   box(g,0,0,128,128,'#1f3440');for(let y=0;y<128;y+=32)for(let x=0;x<128;x+=32){box(g,x+2,y+2,29,29,'#30495a');box(g,x+2,y+2,29,1,'#3f5a6c');}speck(g,rnd,220,['#27404e','#3a5568']);
+   if(variant===1){box(g,0,42,128,40,'#7e9099');box(g,0,42,128,4,'#a9b9bf');box(g,0,78,128,4,'#55666e');for(let x=0;x<128;x+=32)box(g,x,42,2,40,'#5f717a');}
+   if(variant===2)tray(g,52);
+  }else if(level===2){
+   // Warehouse: corrugated steel deck on I-beams; red sprinkler mains.
+   for(let x=0;x<128;x+=16){box(g,x,0,8,128,'#2b343d');box(g,x+8,0,8,128,'#222a32');box(g,x,0,1,128,'#3c4853');}
+   box(g,0,0,128,13,'#171c21');box(g,0,13,128,2,'#3b4652');box(g,0,0,128,2,'#3b4652');
+   if(variant===1){pipe(g,70,7,'#5e1a12','#9b2f22','#d4583f');box(g,62,77,5,6,'#c9b27a');}
+   if(variant===2)tray(g,46);
+  }else{
+   // Malt house: dusty board ceiling with heavy timber beams.
+   for(let x=0;x<128;x+=16){box(g,x,0,16,128,x%32?'#3b342b':'#363026');box(g,x,0,1,128,'#231e18');}
+   speck(g,rnd,260,['#6e624c66','#231e1860']);
+   box(g,0,0,128,18,'#2a231b');box(g,0,18,128,2,'#4a3f31');box(g,0,1,128,2,'#3d3328');
+   if(variant===1)pipe(g,66,8,'#3a3f3f','#727b78','#a8b0a9');
+   if(variant===2){box(g,60,0,3,128,'#1a1612');box(g,63,0,1,128,'#4a3f31');}
+  }
+ });}
+ SceneArt.floor=floor;SceneArt.ceiling=ceiling;
 })();
