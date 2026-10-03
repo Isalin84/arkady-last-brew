@@ -48,6 +48,10 @@ const EnemyAI=(()=>{
  // Enemy projectiles (spitters, boss) are added by a later track.
  function updateShots(dt){}
  function reset(level){pathAt=-1;pathField=[];ai.enemyShots=[];}
- const ai={update,updateAll,updateShots,reset,damage,chase,forklift,routeField,enemyShots:[],get pathField(){return pathField;}};
+ // Billboards for enemy projectiles handed to the renderer each frame.
+ function sprites(){return [];}
+ // Health bars / boss bar drawn on ctx over the 3D view; rects come from Renderer.render.
+ function overlays(rects){}
+ const ai={sprites,overlays,update,updateAll,updateShots,reset,damage,chase,forklift,routeField,enemyShots:[],get pathField(){return pathField;}};
  return ai;
 })();

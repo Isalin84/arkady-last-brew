@@ -46,6 +46,11 @@ jobs:
           node tests/audio.test.cjs
           node tests/score.test.cjs
           node tests/pages.test.cjs
+          node tests/renderer.test.cjs
+          node tests/fx.test.cjs
+          node tests/enemies.test.cjs
+          node tests/ui.test.cjs
+          node tests/replay.test.cjs
           npm run test:browser
       - name: Assemble website
         run: |

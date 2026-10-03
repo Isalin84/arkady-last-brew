@@ -94,7 +94,7 @@ warehouseStory();
 if(levelIndex!==3&&kills===levelTotal&&Math.hypot(player.x-LEVELS[levelIndex].exit[0],player.y-LEVELS[levelIndex].exit[1])<.85)finish(true);
 }
 // Snapshot of the state the renderer needs this frame.
-function frameView(){return {player,map,props,enemies,items,shots,particles:GameFX.particles,clock,levelIndex,level:LEVELS[levelIndex],stellaVisible,started,running,weapon,kick,hurt};}
+function frameView(){return {player,map,props,enemies,items,shots,particles:GameFX.particles,extra:[...EnemyAI.sprites(),...GameFX.sprites()],lights:GameFX.lights,decals:GameFX.decals,clock,levelIndex,level:LEVELS[levelIndex],stellaVisible,started,running,weapon,kick,hurt};}
 function drawWorld(){Renderer.drawWorld(frameView());}
 function drawSprites(){Renderer.drawSprites(frameView());}
 function gun(){
@@ -109,7 +109,7 @@ function gun(){
  ctx.restore();
 }
 function minimap(){let scale=showMap?15:6,ox=W-16-map[0].length*scale,oy=16;ctx.fillStyle='#10241fe8';ctx.fillRect(ox-7,oy-7,map[0].length*scale+14,map.length*scale+14);map.forEach((row,y)=>row.forEach((t,x)=>{ctx.fillStyle=t===5?'#b59a68':t===2?'#ac8652':t===3?'#d9d883':t?'#63725b':'#233c2f';ctx.fillRect(ox+x*scale,oy+y*scale,scale-1,scale-1);}));if(showMap){for(let e of enemies){if(e.hp<=0)continue;ctx.fillStyle='#d28966';ctx.fillRect(ox+e.x*scale-2,oy+e.y*scale-2,4,4);}for(let i of items){ctx.fillStyle='#c5dca0';ctx.fillRect(ox+i.x*scale-2,oy+i.y*scale-2,4,4);}if(levelIndex===3){for(const p of props.filter(p=>['aspiration','screw','hatch'].includes(p.type)&&!p.active)){ctx.fillStyle='#edce70';ctx.fillRect(ox+p.x*scale-3,oy+p.y*scale-3,6,6);}if(stellaVisible){ctx.fillStyle='#8ee59d';ctx.beginPath();ctx.arc(ox+LEVELS[3].stella[0]*scale,oy+LEVELS[3].stella[1]*scale,4,0,7);ctx.fill();}}}ctx.fillStyle='#ffd778';ctx.beginPath();ctx.arc(ox+player.x*scale,oy+player.y*scale,3,0,7);ctx.fill();ctx.strokeStyle='#ffd778';ctx.beginPath();ctx.moveTo(ox+player.x*scale,oy+player.y*scale);ctx.lineTo(ox+(player.x+Math.cos(player.a)*.7)*scale,oy+(player.y+Math.sin(player.a)*.7)*scale);ctx.stroke();}
-function render(){const rects=Renderer.render(frameView());GameUI.overlays(rects);if(started){gun();minimap();}else{ctx.fillStyle='#112c1933';ctx.fillRect(0,0,W,H);}if(hurt>0){ctx.fillStyle=`rgba(172,56,27,${hurt*.3})`;ctx.fillRect(0,0,W,H);}}
+function render(){const rects=Renderer.render(frameView());EnemyAI.overlays(rects);GameUI.overlays(rects);if(started){gun();minimap();}else{ctx.fillStyle='#112c1933';ctx.fillRect(0,0,W,H);}if(hurt>0){ctx.fillStyle=`rgba(172,56,27,${hurt*.3})`;ctx.fillRect(0,0,W,H);}}
 GameUI.init();
 $('#audio-settings').addEventListener('toggle',()=>{if($('#audio-settings').open&&running)pause();});
 $('#start').addEventListener('click',start);$('#sound').addEventListener('click',()=>{audioEnabled=!audioEnabled;GameAudio.setEnabled(audioEnabled);$('#sound').setAttribute('aria-label',audioEnabled?'Выключить звук':'Включить звук');$('#sound').textContent='Звук: '+(audioEnabled?'вкл.':'выкл.');});document.querySelectorAll('.weapon').forEach(b=>b.addEventListener('click',()=>choose(+b.dataset.weapon)));
