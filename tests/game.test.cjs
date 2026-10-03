@@ -20,16 +20,13 @@ player.hp=24;updateHUD();assert.equal($('#arkady-health-portrait').src,'assets/a
 player.hp=76;updateHUD();assert.equal($('#arkady-health-portrait').src,'assets/art/arkady-health-100.webp');
 player.hp=100;updateHUD();
 // Real raycasting must read wall lettering left-to-right on all four faces.
-const originalDrawImage=ctx.drawImage;
 for(const angle of [0,Math.PI/2,Math.PI,Math.PI*1.5]){
  player={x:3.5,y:3.5,a:angle,hp:100};
- const columns=[];
- ctx.drawImage=(...args)=>{if(args[5]===480||args[5]===500)columns.push(args[1]);};
+ const hits=[480,500].map(x=>{const camera=(2*x/W-1)*Math.tan(FOV/2);return Renderer.castRay(map,player.x,player.y,Math.cos(angle)-Math.sin(angle)*camera,Math.sin(angle)+Math.cos(angle)*camera);});
+ assert.equal(hits[0].mx+','+hits[0].my+','+hits[0].side,hits[1].mx+','+hits[1].my+','+hits[1].side,'Both rays hit the same face');
+ assert.ok(hits[1].u>hits[0].u,'Mirrored wall at heading '+angle+': '+hits.map(h=>h.u));
  drawWorld();
- assert.equal(columns.length,2);
- assert.ok(columns[1]>columns[0],'Mirrored wall at heading '+angle+': '+columns);
 }
-ctx.drawImage=originalDrawImage;
 reset();
 // Every enemy, pickup and exit approach is reachable from spawn.
 let queue=[[3,2]], seen=new Set(['3,2']);
