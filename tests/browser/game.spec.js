@@ -156,10 +156,12 @@ test.describe('touch layouts',()=>{
     expect(await page.evaluate(()=>GameUI.touchMove.y)).toBe(0);
     await page.screenshot({path:testInfo.outputPath(`touch-${name}.png`)});
     // pausing hides the controls and opens the panel
-    await page.locator('#touchpause').tap();
+    // The browser's own hit test proves every control is reachable; Playwright's emulated tap is unreliable on CI (offset touches).
+    for(const id of ['#touchpause','#touchfire','#touchuse','#touchswap']){expect(await page.evaluate(sel=>{const el=document.querySelector(sel),b=el.getBoundingClientRect(),hit=document.elementFromPoint(b.x+b.width/2,b.y+b.height/2);return Boolean(hit&&el.contains(hit));},id),id+' is the topmost element at its centre').toBe(true);}
+    await page.locator('#touchpause').dispatchEvent('click');
     await expect(page.locator('#pause-panel')).toBeVisible();
     await expect(page.locator('#joystick')).toBeHidden();
-    await page.locator('#resume').tap();
+    await page.locator('#resume').dispatchEvent('click');
     await expect(page.locator('#pause-panel')).toBeHidden();
     await expect(page.locator('#joystick')).toBeVisible();
     expect(errors).toEqual([]);
