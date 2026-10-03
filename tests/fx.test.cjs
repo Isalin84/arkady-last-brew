@@ -96,6 +96,8 @@ for(const t of [3,4,5,6,7,8,9,10]){GameFX.onKill(mk(4,4,0,t));}assert.equal(Game
 // ---- spinning projectiles: bottles/cans leave the plain shot list and become rotating billboards ----
 GameFX.reset();const spinShots=[{type:'bottle',x:5,y:5,age:0},{type:'can',x:6,y:5,age:.2},{type:'cork',x:7,y:5,age:0},{type:'foam',x:8,y:5,age:0}];
 const plain=GameFX.shotView(spinShots);assert.equal(plain.length,2);assert.ok(plain.every(s=>s.type==='cork'||s.type==='foam'));let sp=GameFX.sprites();assert.equal(sp.length,2);const img0=sp[0].img;spinShots[0].age=.1;GameFX.shotView(spinShots);assert.notEqual(GameFX.sprites()[0].img,img0,'bottle frame changes with age');
+// nothing thrown is drawn within 0.9 cells of the player
+{reset();player.x=5;player.y=5;const near=[{type:'bottle',x:5.3,y:5,age:0},{type:'can',x:5,y:5.8,age:.05},{type:'cork',x:5.5,y:5,age:0},{type:'foam',x:5,y:4.3,age:0},{type:'bottle',x:6.5,y:5,age:.1}];const vis=GameFX.shotView(near);const all=[...vis,...GameFX.sprites()];assert.equal(all.length,1,'only the far bottle is drawn');assert.ok(all.every(b=>Math.hypot(b.x-5,b.y-5)>=.9),'no billboard within 0.9 cells');}
 // ---- weapon poses: swap, three-phase throw, recoil ----
 GameFX.reset();reset();choose(0);let pose=GameFX.gunPose(0,0,false,0);assert.equal(pose.item,1);assert.equal(pose.throwing,false);
 GameFX.onSwap(0,2);let p=GameFX.gunPose(2,0,false,0);assert.equal(p.shown,0,'old weapon is lowered first');assert.ok(p.y>=0);GameFX.update(.1);p=GameFX.gunPose(2,0,false,0);assert.equal(p.shown,0);assert.ok(p.y>150,'lowered '+p.y);

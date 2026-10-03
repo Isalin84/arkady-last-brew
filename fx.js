@@ -99,7 +99,7 @@ const GameFX=(()=>{
  }
  // ---- billboards handed to the renderer ----
  // Thrown bottles and cans spin: pre-rotated copies of the sprite chosen by shot age.
- const SPIN=8,spinCache={},spinList=[],flat=[],spinPool=[];
+ const NEAR=.9,SPIN=8,spinCache={},spinList=[],flat=[],spinPool=[];
  function spinFrames(type){
   if(spinCache[type])return spinCache[type];
   const src=typeof Renderer!=='undefined'?Renderer.sprites?.[type]:null;if(!src)return null;
@@ -111,7 +111,7 @@ const GameFX=(()=>{
   spinList.length=0;flat.length=0;let n=0;
   const pl=playerNow();
   for(const s of shots){
-   if(pl&&(s.x-pl.x)**2+(s.y-pl.y)**2<.4)continue;// hidden while still leaving the hand/muzzle
+   if(pl&&(s.x-pl.x)**2+(s.y-pl.y)**2<NEAR*NEAR)continue;// hidden while still leaving the hand/muzzle
    const frames=s.type==='bottle'||s.type==='can'?spinFrames(s.type):null;
    if(!frames){flat.push(s);continue;}
    const b=spinPool[n]||(spinPool[n]={size:.24,aspect:1});n++;
