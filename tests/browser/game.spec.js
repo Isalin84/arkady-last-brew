@@ -44,6 +44,7 @@ test('streamed music follows the title, the shift and the pause',async({page})=>
  expect(await page.evaluate(()=>GameAudio.musicElement('menu').src)).toMatch(/assets\/audio\/music\/menu-arkady-is-back\.(webm|m4a)$/);
  await page.getByRole('button',{name:/Начать смену/}).click();
  await expect(page.locator('#hud')).toBeVisible();
+ await page.evaluate(()=>{enemies=[];}); // idle on slow CI must not end the shift
  expect(await page.evaluate(()=>GameAudio.track)).toBe('game');
  await expect.poll(()=>page.evaluate(()=>{const e=GameAudio.musicElement('game');return !e.paused&&e.currentTime>0;}),{timeout:10000}).toBe(true);
  await expect.poll(()=>page.evaluate(()=>GameAudio.musicElement('menu').paused)).toBe(true);
@@ -68,6 +69,7 @@ test('Esc opens the pause panel over the live scene and settings persist across 
  await expect(page.locator('#pause-panel')).toBeHidden();
  await page.getByRole('button',{name:/Начать смену/}).click();
  await expect(page.locator('#hud')).toBeVisible();
+ await page.evaluate(()=>{enemies=[];}); // idle on slow CI must not end the shift
  await page.keyboard.press('Escape');
  await expect(page.locator('#pause-panel')).toBeVisible();
  await expect(page.locator('#pause-title')).toContainText('Перерыв');
@@ -117,6 +119,7 @@ test('fullscreen button follows the Fullscreen API and F toggles the stage',asyn
  if(!supported){await expect(page.locator('#fullscreen')).toBeHidden();return;}
  await expect(page.locator('#fullscreen')).toBeVisible();
  await page.getByRole('button',{name:/Начать смену/}).click();
+ await page.evaluate(()=>{enemies=[];}); // idle on slow CI must not end the shift
  await page.keyboard.press('f');
  await expect.poll(()=>page.evaluate(()=>document.fullscreenElement&&document.fullscreenElement.id)).toBe('stage');
  const view=await page.locator('#view').boundingBox();
@@ -137,6 +140,8 @@ test.describe('touch layouts',()=>{
     await expect(page.locator('.bottomline')).toBeHidden();
     await page.locator('#start').tap();
     await expect(page.locator('#hud')).toBeVisible();
+    // Layout-only test: on slow CI runners idle time is long enough for enemies to finish the shift.
+    await page.evaluate(()=>{enemies=[];});
     for(const id of ['#joystick','#touchfire','#touchuse','#touchswap'])await expect(page.locator(id)).toBeVisible();
     await page.evaluate(()=>{const s=document.querySelector('#subtitle');s.hidden=false;s.textContent='Аркадий: Ну что, Аркадий. Ещё одна ночная смена, и снова весь цех против меня одного.';});
     const sub=await page.locator('#subtitle').boundingBox();
