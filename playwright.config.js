@@ -1,9 +1,11 @@
 const {defineConfig}=require('@playwright/test');
+// PORT lets parallel worktrees run browser tests without reusing each other's server.
+const port=Number(process.env.PORT)||4173;
 
 module.exports=defineConfig({
  testDir:'./tests/browser',
  timeout:30000,
  workers:1,
- use:{baseURL:'http://127.0.0.1:4173',headless:true,viewport:{width:1280,height:900}},
- webServer:{command:'python3 -m http.server 4173 --bind 127.0.0.1',url:'http://127.0.0.1:4173',reuseExistingServer:true,timeout:15000}
+ use:{baseURL:`http://127.0.0.1:${port}`,headless:true,viewport:{width:1280,height:900}},
+ webServer:{command:`python3 -m http.server ${port} --bind 127.0.0.1`,url:`http://127.0.0.1:${port}`,reuseExistingServer:true,timeout:15000}
 });
