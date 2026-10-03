@@ -174,7 +174,19 @@ const SceneArt=(()=>{
  const maltDoor=art('malt-door',g=>{
  box(g,0,0,128,128,'#1c313a');for(let x=8;x<128;x+=12)box(g,x,5,3,120,'#506972');box(g,7,6,114,5,'#d8b349');label(g,'СОЛОДОВНЯ',64,47,110);label(g,'СИЛОС 04',64,67,96);g.fillStyle='#ecd78c';g.font='bold 32px monospace';g.textAlign='center';g.fillText('→',64,105);
  });
- return{prop,monster,forklift,wall,packWall,rack,warehouseWall,maltWall,siloWall,maltDoor};
+ // ---- painted sprites (assets/art/monster-*.webp) ----
+ // Each file loads on first request or SceneArt.preload into its own canvas; until then callers get the Canvas art above.
+ const SLUG=['yeast','foam-mold','sour','can-imp','bottle-biter','pallet-golem','forklift','reach-truck','malt-tick','dust-ghost','clump-guard','spitter','malt-king'];
+ const FRAMES={11:['a','b','spit'],12:['a','b','slam','rage-a','rage-b','rage-slam']},MODES={hunt:'hunt',windup:'charge',charge:'charge',recover:'recover'},paintedCache={};
+ const frameName=(type,frame)=>type===6||type===7?MODES[frame]||'hunt':(FRAMES[type]||['a','b'])[frame];
+ function painted(type,frame=0){
+  const name=frameName(type,frame);if(!name||!SLUG[type])return null;const file=`monster-${SLUG[type]}-${name}`;
+  let p=paintedCache[file];
+  if(!p){p=paintedCache[file]={c:null};if(typeof Image!=='undefined'){const im=new Image();im.decoding='async';im.onload=()=>{const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;c.getContext('2d').drawImage(im,0,0);p.c=c;};im.src=`assets/art/${file}.webp`;}}
+  return p.c;
+ }
+ function preload(types){for(const t of types){if(t===6||t===7)for(const m of ['hunt','charge','recover'])painted(t,m);else (FRAMES[t]||['a','b']).forEach((_,f)=>painted(t,f));}}
+ return{prop,monster:(type,frame=0)=>painted(type,frame)||monster(type,frame),forklift:(type,mode='hunt',frame=0)=>painted(type,mode)||forklift(type,mode,frame),painted,preload,wall,packWall,rack,warehouseWall,maltWall,siloWall,maltDoor};
 })();
 // Floor and ceiling surfaces per hall: 128px canvases tiled once per map cell; the renderer picks a variant per cell.
 (()=>{

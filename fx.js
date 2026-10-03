@@ -88,14 +88,14 @@ const GameFX=(()=>{
  const corpseCache={};
  function enemyImage(t){
   const S=typeof SceneArt!=='undefined'?SceneArt:null;
-  try{if(t===6||t===7)return S?.forklift?.(t,'recover',0);if(t>2)return S?.monster?.(t,0);return typeof Renderer!=='undefined'?Renderer.sprites?.['enemy'+t]:null;}catch{return null;}
+  try{if(t===6||t===7)return S?.forklift?.(t,'recover',0);if(t>2)return S?.monster?.(t,0);return S?.painted?.(t,0)||(typeof Renderer!=='undefined'?Renderer.sprites?.['enemy'+t]:null);}catch{return null;}
  }
  // Squashed, darkened copy of the enemy sprite lying in a puddle of its own colour, cached per type.
  function corpseImage(t){
   if(corpseCache[t])return corpseCache[t];
   const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d'),src=enemyImage(t),col=(typeof ENEMY_TYPES!=='undefined'&&ENEMY_TYPES[t]?.color)||'#8a7a50';
   g.globalAlpha=.55;g.fillStyle=col;g.beginPath();g.ellipse(64,119,58,9,0,0,Math.PI*2);g.fill();g.fillStyle='#000';g.globalAlpha=.25;g.beginPath();g.ellipse(64,120,48,6,0,0,Math.PI*2);g.fill();g.globalAlpha=1;
-  if(src){g.drawImage(src,0,0,128,128,8,80,112,42);g.globalCompositeOperation='source-atop';g.fillStyle='rgba(22,12,8,.42)';g.fillRect(0,70,128,58);g.globalCompositeOperation='source-over';}
+  if(src){g.drawImage(src,0,0,src.width||128,src.height||128,8,80,112,42);g.globalCompositeOperation='source-atop';g.fillStyle='rgba(22,12,8,.42)';g.fillRect(0,70,128,58);g.globalCompositeOperation='source-over';}
   g.globalAlpha=.6;g.fillStyle=col;for(const [x,y,r] of [[18,116,3],[108,113,2.5],[92,122,2],[36,122,2.5]]){g.beginPath();g.ellipse(x,y,r*1.6,r*.7,0,0,7);g.fill();}g.globalAlpha=1;
   return corpseCache[t]=c;
  }

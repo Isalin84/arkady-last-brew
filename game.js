@@ -6,7 +6,7 @@ let player,enemies,items,shots=[],running=false,started=false,won=false,dead=fal
 const keys=new Set();
 let runUpgrades=[],gunStep=0;
 function loadLevel(index,restore=false){
- finaleSequence++;finalResult=null;GameAudio.reset();setFinaleCover(false);storyHeard=false;storyTimer=0;rescueStage=0;stellaVisible=false;$('#radio-message').hidden=true;levelIndex=index;const level=LEVELS[index];map=level.map.map(r=>r.split('').map(Number));
+ finaleSequence++;finalResult=null;GameAudio.reset();setFinaleCover(false);storyHeard=false;storyTimer=0;rescueStage=0;stellaVisible=false;$('#radio-message').hidden=true;levelIndex=index;const level=LEVELS[index];SceneArt.preload?.(new Set([...level.enemies.map(e=>e[2]),...(level.boss?[level.boss.type,8]:[])]));map=level.map.map(r=>r.split('').map(Number));
  props=level.props.map(([x,y,type,size,r])=>({x,y,type,size,r,active:false}));
  const [x,y,a]=level.spawn;player={x,y,a,hp:restore&&checkpoint?checkpoint.hp:100};
  enemies=level.enemies.map(([x,y,type],i)=>({x,y,type,hp:Math.round(ENEMY_TYPES[type].hp*diffRules.enemyHp),max:Math.round(ENEMY_TYPES[type].hp*diffRules.enemyHp),attack:0,hit:0,seed:i*3.1,alert:false,mode:'hunt',phase:0,chargeCooldown:1.5,heading:Math.PI}));levelTotal=enemies.length;

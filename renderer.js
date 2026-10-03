@@ -258,7 +258,7 @@ const Renderer=(()=>{
    const alive=e.hp>0;if(!alive&&!(e.dying>0&&e.dying<1))continue;const fork=e.type===6||e.type===7;
    // Spitters and the boss pick their own frame and scale.
    const look=typeof EnemyAI!=='undefined'&&EnemyAI.look?.(e);
-   const img=look?look.img:fork?SceneArt.forklift(e.type,e.mode,Math.floor(clock*10)%2):e.type>2?SceneArt.monster(e.type,e.attack>.5?1:Math.floor(clock*6+e.seed)%2):sprites['enemy'+e.type];
+   const img=look?look.img:fork?SceneArt.forklift(e.type,e.mode,Math.floor(clock*10)%2):e.type>2?SceneArt.monster(e.type,e.attack>.5?1:Math.floor(clock*6+e.seed)%2):SceneArt.painted?.(e.type,e.attack>.5?1:Math.floor(clock*6+e.seed)%2)||sprites['enemy'+e.type];
    const s=look?add(img,e.x,e.y,look.size,look.z||0,look.aspect||1,alive?e:null):add(img,e.x,e.y,fork?1.25:e.type===10?1.25:e.type===5?1.15:e.type===8?.7:.85,fork?0:e.type===9?.13+Math.sin(clock*4+e.seed)*.04:Math.sin(clock*5+e.seed)*.025,fork?1.25:1,alive?e:null);
    s.isEnemy=true;s.hit=e.hit||0;s.stagger=e.stagger||0;s.dying=e.dying||0;s.seed=e.seed||0;
   }

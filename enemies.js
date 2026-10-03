@@ -185,7 +185,8 @@ const EnemyAI=(()=>{
  }
  // Sprite choice for the new types (renderer integration: use when non-null; e.frame overrides the animation frame).
  function look(e){
-  if(e.type===11)return {img:SceneArt.monster(11,e.mode==='spit'?2:Math.floor(clock*4+e.seed)%2),size:ENEMY_TYPES[11].size,aspect:1,z:Math.sin(clock*3+e.seed)*.02};
+  // The painted spitter leaves more headroom in its frame than the Canvas one, so it is drawn a quarter larger.
+  if(e.type===11)return {img:SceneArt.monster(11,e.mode==='spit'?2:Math.floor(clock*4+e.seed)%2),size:ENEMY_TYPES[11].size*(SceneArt.painted?.(11,0)?1.25:1),aspect:1,z:Math.sin(clock*3+e.seed)*.02};
   if(e.type===12)return {img:SceneArt.monster(12,(e.mode==='slam'||e.mode==='volley'||e.mode==='emerge'?2:Math.floor(clock*2.5)%2)+(e.stage===3?3:0)),size:ENEMY_TYPES[12].size,aspect:ENEMY_TYPES[12].aspect,z:0};
   return null;
  }
