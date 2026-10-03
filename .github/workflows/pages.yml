@@ -52,6 +52,13 @@ jobs:
           node tests/ui.test.cjs
           node tests/replay.test.cjs
           npm run test:browser
+      - name: Keep browser test evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: test-results/
+          retention-days: 7
       - name: Assemble website
         run: |
           mkdir -p _site/assets/art/brand _site/assets/audio/voice _site/assets/audio/music _site/assets/audio/sfx
