@@ -270,6 +270,11 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--gold);outline-offse
 #fullscreen:hover,#sound:hover{border-color:var(--gold);color:var(--gold-hi)}
 #fullscreen[hidden]{display:none}
 #fullscreen svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:square}
+/* Icon-only sound toggle: sound waves while on, a slash across the speaker while off. */
+#sound{padding:0 9px;align-self:stretch;justify-content:center}
+#sound svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}
+#sound .sound-off,#sound[data-off] .sound-on{display:none}
+#sound[data-off] .sound-off{display:inline}
 
 /* Fullscreen: black letterbox around a 16:9 view, HUD scales with the view width. */
 #stage::backdrop{background:#000}
@@ -544,6 +549,7 @@ body.panel-open #mobile{display:none!important}
 @media(max-width:700px){
  .head-actions{gap:6px}
  #fullscreen,#sound{padding:8px;font-size:10px}
+ #sound{padding:0 8px}
  #fullscreen span{display:none}
  .intro-actions{flex-wrap:nowrap;gap:8px;margin-top:14px}
  .intro-actions #start{flex:1;min-width:0;width:auto;max-width:none}
