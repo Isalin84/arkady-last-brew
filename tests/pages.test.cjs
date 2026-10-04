@@ -27,14 +27,14 @@ const globs=musicCopy.split(/\s+/).slice(1,-1).map(g=>new RegExp('^'+g.replace(/
 const deployed=file=>globs.some(re=>re.test(file));
 for(const name of tracks)for(const ext of exts){const file='assets/audio/music/'+name+'.'+ext;assert.ok(tracked.has(file),'music file is not in Git: '+file);assert.ok(deployed(file),'pages.yml does not copy '+file);}
 for(const file of ['assets/audio/music/Arkady is  Back.mp3','assets/audio/music/arkady-hunting.mp3'])assert.ok(!deployed(file),'pages.yml must not publish MP3 sources: '+file);
-// Every painted sprite the art modules request is tracked and copied by the assets/art/*.webp glob.
+// Every painted sprite and hall surface the art modules request is tracked and copied by the assets/art/*.webp glob.
 const vm=require('node:vm'),requested=[];
 const any=new Proxy(function(){},{get:(t,k)=>k===Symbol.toPrimitive?()=>0:any,apply:()=>any,set:()=>true});// absorbs every Canvas call made while the art modules load
 const sandbox={console,document:{createElement:()=>({getContext:()=>any})},Image:class{set src(v){requested.push(v);}addEventListener(){}}};vm.createContext(sandbox);
 for(const file of ['weapons-art.js','scene-art.js'])vm.runInContext(readFileSync(file,'utf8')+';this.SceneArt=typeof SceneArt!=="undefined"?SceneArt:undefined;',sandbox);
-sandbox.SceneArt.preload([0,1,2,3,4,5,6,7,8,9,10,11,12]);sandbox.SceneArt.preloadProps(['tank','kettle','filter','keg','bottles','cans','filler','seamer','radio','pallet','maltSilo','bucket','maltBags','aspiration','screw','hatch']);
+sandbox.SceneArt.preload([0,1,2,3,4,5,6,7,8,9,10,11,12]);sandbox.SceneArt.preloadProps(['tank','kettle','filter','keg','bottles','cans','filler','seamer','radio','pallet','maltSilo','bucket','maltBags','aspiration','screw','hatch']);for(let hall=0;hall<4;hall++)sandbox.SceneArt.surfaces(hall);
 const art=new Set(execFileSync('git',['ls-files','assets/art'],{encoding:'utf8'}).split('\n').filter(Boolean));
 assert.ok(lines.includes('cp assets/art/*.webp _site/assets/art/'),'pages.yml copies assets/art/*.webp');
-assert.ok(requested.length===71,'painted sprites requested: '+requested.length);
-for(const file of requested)assert.ok(/^assets\/art\/[^/]+\.webp$/.test(file)&&art.has(file),'painted sprite is not in Git or outside assets/art: '+file);
-console.log('PASS: '+scripts.length+' page scripts checked and deployed, '+tests.length+' node tests run in Pages workflow, '+tracks.length*exts.length+' music files tracked and deployed, '+requested.length+' painted sprites tracked');
+assert.ok(requested.length===109,'painted sprites and surfaces requested: '+requested.length);
+for(const file of requested)assert.ok(/^assets\/art\/[^/]+\.webp$/.test(file)&&art.has(file),'painted art is not in Git or outside assets/art: '+file);
+console.log('PASS: '+scripts.length+' page scripts checked and deployed, '+tests.length+' node tests run in Pages workflow, '+tracks.length*exts.length+' music files tracked and deployed, '+requested.length+' painted art files tracked');

@@ -12,16 +12,25 @@ const Renderer=(()=>{
  const TEXEL_ASPECT=W/(2*PLANE)/VIEW,BRAND_W=Math.round(128*TEXEL_ASPECT);
  function brandWall(src){const c=document.createElement('canvas');c.width=BRAND_W;c.height=128;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(src,0,0,BRAND_W,128);return c;}
  const studioWall=brandWall(textures[1]),studioPackWall=brandWall(SceneArt.packWall),studioWarehouseWall=brandWall(SceneArt.warehouseWall),studioMaltWall=brandWall(SceneArt.maltWall),studioLogo=document.createElement('img');
- studioLogo.onload=()=>{for(const wall of [studioWall,studioPackWall,studioWarehouseWall,studioMaltWall]){const g=wall.getContext('2d');g.imageSmoothingEnabled=true;g.drawImage(studioLogo,BRAND_W/2-42,22,84,84);invalidate(wall);}};
+ const logoReady=()=>studioLogo.complete&&studioLogo.naturalWidth>0;
+ function stampLogo(wall){const g=wall.getContext('2d'),k=wall.height/128;g.imageSmoothingEnabled=true;g.drawImage(studioLogo,wall.width/2-42*k,22*k,84*k,84*k);invalidate(wall);}
+ // Painted hall walls are already 7:4, so the branded copy keeps their size and only gains the logo.
+ const brandedPainted=new Map();
+ function brandPainted(src){let c=brandedPainted.get(src);if(!c){c=document.createElement('canvas');c.width=src.width;c.height=src.height;c.getContext('2d').drawImage(src,0,0);if(logoReady())stampLogo(c);brandedPainted.set(src,c);}return c;}
+ studioLogo.onload=()=>{for(const wall of [studioWall,studioPackWall,studioWarehouseWall,studioMaltWall,...brandedPainted.values()])stampLogo(wall);};
  studioLogo.src='assets/art/brand/logo.png';
+ // Painted surface set of the current hall (SceneArt.surfaces), or null while it loads and the Canvas art stands in.
+ let painted=null;
  function wallTexture(tile,x,y){
-  const levelIndex=current.index,level=current.level||{};
-  if(tile===4)return SceneArt.rack;
-  if(tile===5)return SceneArt.siloWall;
+  const levelIndex=current.index,level=current.level||{},P=painted;
+  if(tile===4)return P?.rack||SceneArt.rack;
+  if(tile===5)return P?.silo||SceneArt.siloWall;
+  if(tile===3&&P)return P.door;
   if((levelIndex===2||levelIndex===3)&&tile===3)return SceneArt.maltDoor;
-  if(tile===2)return SceneArt.wall((x+y)%3);
+  if(tile===2)return P?.panels?.[(x+y)%3]||SceneArt.wall((x+y)%3);
   if(tile===1){
    const branded=(level.logoWalls||[]).some(([lx,ly])=>x===lx&&y===ly);
+   if(P)return branded?brandPainted(P.wall):P.wall;
    if(levelIndex===1)return branded?studioPackWall:SceneArt.packWall;
    if(levelIndex===2)return branded?studioWarehouseWall:SceneArt.warehouseWall;
    if(levelIndex===3)return branded?studioMaltWall:SceneArt.maltWall;
@@ -45,7 +54,7 @@ const Renderer=(()=>{
  function tex(c){let t=texCache.get(c);if(!t){t=extract(c,{});texCache.set(c,t);}return t;}
  function halve(t){const w=t.w>>1,h=t.h>>1,s=t.px,px=new Uint32Array(w*h);for(let y=0;y<h;y++)for(let x=0;x<w;x++){let r=0,g=0,b=0,a=0;for(let k=0;k<4;k++){const p=s[(2*y+(k>>1))*t.w+2*x+(k&1)],pa=p>>>24;a+=pa;r+=(p&255)*pa;g+=(p>>8&255)*pa;b+=(p>>16&255)*pa;}px[y*w+x]=a?((a>>2)<<24|Math.round(b/a)<<16|Math.round(g/a)<<8|Math.round(r/a))>>>0:0;}return {w,h,px};}
  function mip(t,level){const m=t.mips;while(m.length<=level){const last=m[m.length-1];if(last.w<16||last.h<16)return last;m.push(halve(last));}return m[level];}
- const mipFor=(t,texelsPerPixel)=>mip(t,texelsPerPixel<1.6?0:texelsPerPixel<3.2?1:texelsPerPixel<6.4?2:3);
+ const mipLevel=tpp=>tpp<1.6?0:tpp<3.2?1:tpp<6.4?2:tpp<12.8?3:4,mipFor=(t,texelsPerPixel)=>mip(t,mipLevel(texelsPerPixel));
  // Re-reads a canvas after async painting (logo, Stella); objects held in level tables update in place.
  function invalidate(source){const t=source&&texCache.get(source);if(t)extract(source,t);}
  function proceduralTex(w,h,fn){const px=new Uint32Array(w*h);for(let y=0;y<h;y++)for(let x=0;x<w;x++)px[y*w+x]=fn(x/(w-1),y/(h-1))>>>0;const t={w,h,px};t.mips=[t];return t;}
@@ -69,7 +78,7 @@ const Renderer=(()=>{
  let ceilFlat=[[36,58,54],[0,0,0]];
 
  // ---- Level tables: wall textures per cell, floor/ceiling variants, lamps and the 4×4-per-cell lightmap.
- let MW=1,MH=1,wallTex=[],fvar=new Uint8Array(1),cvar=new Uint8Array(1),lampCell=new Int8Array(1),lamps=[],floorPx=[[],[],[]],ceilPx=[[],[],[]];
+ let MW=1,MH=1,wallTex=[],fvar=new Uint8Array(1),cvar=new Uint8Array(1),lampCell=new Int8Array(1),lamps=[],floorPx=[[],[],[],[],[]],ceilPx=[[],[],[],[],[]];
  let LW=0,LH=0,LM=new Float32Array(3),LF=null,LP=null,LMc=LM;
  const hash=(x,y)=>{let h=(x*374761393+y*668265263)|0;h=(h^(h>>>13))*1274126177|0;return ((h^(h>>>16))>>>0)/4294967296;};
  function floorVariant(index,map,x,y){
@@ -89,14 +98,19 @@ const Renderer=(()=>{
  function buildTables(){
   const map=current.map,index=current.index;MH=map.length;MW=map[0].length;
   wallTex=new Array(MW*MH);fvar=new Uint8Array(MW*MH);cvar=new Uint8Array(MW*MH);lampCell=new Int8Array(MW*MH).fill(-1);
-  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const t=map[y][x];if(t)wallTex[y*MW+x]=tex(wallTexture(t,x,y));fvar[y*MW+x]=floorVariant(index,map,x,y);cvar[y*MW+x]=y%4===2?1:x%5===3?2:0;}
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){fvar[y*MW+x]=floorVariant(index,map,x,y);cvar[y*MW+x]=y%4===2?1:x%5===3?2:0;}
   const shape={round:0,tube:1,box:2}[LOOK.lamp]??0;
   lamps=LOOK.lights.map(([x,y,radius,intensity,color,flag],i)=>{const c=hex(color);const l={x,y,radius,intensity,c,r:c[0]/255,g:c[1]/255,b:c[2]/255,flag:flag||'',shape:flag==='p'?3:shape,k:1,seed:i*1.7};const cx=Math.floor(x),cy=Math.floor(y);if(cx>=0&&cy>=0&&cx<MW&&cy<MH)lampCell[cy*MW+cx]=i;return l;});
-  const S=SceneArt.floor&&SceneArt.ceiling;
-  const fl=[0,1,2,3,4].map(v=>S?tex(SceneArt.floor(index,v)):tex(textures[1])),cl=[0,1,2].map(v=>S?tex(SceneArt.ceiling(index,v)):tex(textures[1]));
-  for(let l=0;l<3;l++){floorPx[l]=fl.map(t=>mip(t,l).px);ceilPx[l]=cl.map(t=>mip(t,l).px);}
-  floorSize=fl[0].w;
+  buildSurfaces();
   buildLightmap();
+ }
+ // Wall textures per cell and the floor/ceiling mip tables; rerun alone when the hall's painted set arrives.
+ function buildSurfaces(){
+  const map=current.map,index=current.index,P=painted,S=SceneArt.floor&&SceneArt.ceiling;
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const t=map[y][x];wallTex[y*MW+x]=t?tex(wallTexture(t,x,y)):undefined;}
+  const fl=[0,1,2,3,4].map(v=>tex(P?P.floor[v]:S?SceneArt.floor(index,v):textures[1])),cl=[0,1,2].map(v=>tex(P?P.ceiling[v]:S?SceneArt.ceiling(index,v):textures[1]));
+  for(let l=0;l<5;l++){floorPx[l]=fl.map(t=>mip(t,l).px);ceilPx[l]=cl.map(t=>mip(t,l).px);}
+  floorSize=fl[0].w;
  }
  let floorSize=128;
  function buildLightmap(){
@@ -110,7 +124,11 @@ const Renderer=(()=>{
   }
  }
  // Called on level load: rebuilds texture tables, lamps and the lightmap.
- function setLevel(index,level,map){current.index=index;current.level=level;current.map=map;setLook(level,index);buildTables();atmoReset();}
+ function setLevel(index,level,map){
+  current.index=index;current.level=level;current.map=map;setLook(level,index);
+  painted=SceneArt.surfaces?.(index,()=>{if(current.index===index&&current.map){painted=SceneArt.surfaces(index);buildSurfaces();}})||null;
+  buildTables();atmoReset();
+ }
  // Called when map cells change at runtime (e.g. a secret wall opens).
  function onMapChange(){if(current.map)buildTables();}
 
@@ -182,7 +200,7 @@ const Renderer=(()=>{
    const cam=(2*(x+.5)/RW-1)*PLANE,rx=ca-sa*cam,ry=sa+ca*cam;cast(map,P.x,P.y,rx,ry);
    const d=hD,lineH=RH/d,top=(RH-lineH)/2;let y0=Math.ceil(top-.5),y1=Math.ceil(top+lineH-.5);if(y0<0)y0=0;if(y1>RH)y1=RH;
    zbuf[x]=d;wallTop[x]=y0;wallBot[x]=y1;
-   const T=mipFor(wallTexAt(hMx,hMy,hTile),128/lineH),tw=T.w,th=T.h,px=T.px;let tx=(hU*tw)|0;if(tx>=tw)tx=tw-1;
+   const base=wallTexAt(hMx,hMy,hTile),T=mipFor(base,base.h/lineH),tw=T.w,th=T.h,px=T.px;let tx=(hU*tw)|0;if(tx>=tw)tx=tw-1;
    let mr=1,mg=1,mb=1,ar=0,ag=0,ab=0;
    if(!ns){const lx=hSide?hX:hX-(rx<0?-.125:.125),ly=hSide?hY-(ry<0?-.125:.125):hY;sampleLight(lx,ly,true);const f=fogAt(d),k=(1-f)*(hSide?.8:1);mr=SR*k;mg=SG*k;mb=SB*k;ar=FOG[0]*f;ag=FOG[1]*f;ab=FOG[2]*f;}
    const vs=th/lineH;let v=(y0+.5-top)*vs,o=y0*RW+x;
@@ -195,6 +213,7 @@ const Renderer=(()=>{
  }
 
  // ---- Floor and ceiling share each row's world positions (camera at half height); lamps are fullbright fixtures on the ceiling.
+ // A row picks its mip by the geometric mean of the texel steps across and along the view, so distant boards and tiles do not shimmer.
  let LAMP_GLOW=0,LAMP_CORE=0;
  function lampAt(L,dx,dy){
   LAMP_CORE=0;LAMP_GLOW=0;const ax=Math.abs(dx),ay=Math.abs(dy);let e;
@@ -213,7 +232,7 @@ const Renderer=(()=>{
    let wx=P.x+rowD*(ca-sa*cam0),wy=P.y+rowD*(sa+ca*cam0);const dwx=-rowD*sa*dcam,dwy=rowD*ca*dcam;
    for(let s=0;s<=NS;s++){if(ns){Lr[s]=Lg[s]=Lb[s]=1;continue;}const sx=wx+dwx*s*4,sy=wy+dwy*s*4;sampleLight(sx,sy,dyn);Lr[s]=SR*nf;Lg[s]=SG*nf;Lb[s]=SB*nf;}
    Lr[NS+1]=Lr[NS];Lg[NS+1]=Lg[NS];Lb[NS+1]=Lb[NS];
-   const tpp=rowD*dcam*FS,lvl=tpp<1.6?0:tpp<3.2?1:2,FP=floorPx[lvl],CP=ceilPx[lvl],TS=FS>>lvl,TM=TS-1,fo=y*RW,co=yc*RW;
+   const tpp=rowD*FS*Math.sqrt(dcam*rowD/half),lvl=mipLevel(tpp),FP=floorPx[lvl],CP=ceilPx[lvl],TS=FS>>lvl,TM=TS-1,fo=y*RW,co=yc*RW;
    let lowCeil=0;if(low){const c=ceilFlat[0],k=.95*nf;lowCeil=pack(c[0]*k+fr,c[1]*k+fg,c[2]*k+fbb);}
    for(let x=0;x<RW;x++,wx+=dwx,wy+=dwy){
     const fl=y>=wallBot[x],ce=yc<wallTop[x];if(!fl&&!ce)continue;

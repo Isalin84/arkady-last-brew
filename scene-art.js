@@ -174,7 +174,7 @@ const SceneArt=(()=>{
  const maltDoor=art('malt-door',g=>{
  box(g,0,0,128,128,'#1c313a');for(let x=8;x<128;x+=12)box(g,x,5,3,120,'#506972');box(g,7,6,114,5,'#d8b349');label(g,'СОЛОДОВНЯ',64,47,110);label(g,'СИЛОС 04',64,67,96);g.fillStyle='#ecd78c';g.font='bold 32px monospace';g.textAlign='center';g.fillText('→',64,105);
  });
- // ---- painted sprites (assets/art/monster-*.webp, prop-*.webp, item-*.webp) ----
+ // ---- painted art (assets/art/monster-*.webp, prop-*.webp, item-*.webp and hall surfaces) ----
  // Each file loads on first request or preload into its own canvas; until then callers get the Canvas art above.
  const paintedCache={};
  function load(file){
@@ -195,7 +195,18 @@ const SceneArt=(()=>{
  function preloadProps(types){for(const t of types){paintedProp(t,0);paintedProp(t,1);}for(const k of ['health','ammo','gold','mark'])item(k);}
  // Repaints a Canvas-art canvas in place with item-<kind>.webp once it loads, for sprites whose canvas is held long-term.
  function paintOver(c,kind){const p=load('item-'+kind),put=src=>{c.width=src.width;c.height=src.height;c.getContext('2d').drawImage(src,0,0);if(typeof Renderer!=='undefined')Renderer.invalidate?.(c);};if(p.c)put(p.c);else p.wait?.push(put);return c;}
- return{prop:(type,frame=0)=>paintedProp(type,frame)||prop(type,frame),item,paintOver,preloadProps,monster:(type,frame=0)=>painted(type,frame)||monster(type,frame),forklift:(type,mode='hunt',frame=0)=>painted(type,mode)||forklift(type,mode,frame),painted,preload,wall,packWall,rack,warehouseWall,maltWall,siloWall,maltDoor};
+ // Hall surfaces (wall-*, door-*, floor-*, ceiling-*): a hall switches to painted art only once its whole set is in, so its floor and ceiling textures always share one size.
+ const HALLS=['brew','pack','warehouse','malt'],FLOORS=[4,5,3,3],DOORS=['door-exit','door-exit','door-malt','door-malt'],EXTRA=[['wall-brew-panel-a','wall-brew-panel-b','wall-brew-panel-c'],[],['wall-rack'],['wall-silo']];
+ function surfaceFiles(i){const s=HALLS[i];if(!s)return [];const f=[`wall-${s}`,DOORS[i],...EXTRA[i]];for(let v=0;v<FLOORS[i];v++)f.push(`floor-${s}-${v}`);for(let v=0;v<3;v++)f.push(`ceiling-${s}-${v}`);return f;}
+ // Returns the hall's painted set, or null while it loads; onReady fires once the last missing file arrives.
+ function surfaces(i,onReady){
+  const files=surfaceFiles(i);if(!files.length)return null;const missing=files.map(load).filter(p=>!p.c);
+  if(missing.length){if(onReady){let left=missing.length;for(const p of missing)p.wait?.push(()=>{if(--left===0)onReady();});}return null;}
+  const s=HALLS[i],c=f=>paintedCache[f].c;
+  return{wall:c(`wall-${s}`),door:c(DOORS[i]),panels:i===0?['a','b','c'].map(k=>c('wall-brew-panel-'+k)):null,rack:i===2?c('wall-rack'):null,silo:i===3?c('wall-silo'):null,
+   floor:[0,1,2,3,4].map(v=>c(`floor-${s}-${v<FLOORS[i]?v:0}`)),ceiling:[0,1,2].map(v=>c(`ceiling-${s}-${v}`))};
+ }
+ return{prop:(type,frame=0)=>paintedProp(type,frame)||prop(type,frame),item,paintOver,preloadProps,surfaces,monster:(type,frame=0)=>painted(type,frame)||monster(type,frame),forklift:(type,mode='hunt',frame=0)=>painted(type,mode)||forklift(type,mode,frame),painted,preload,wall,packWall,rack,warehouseWall,maltWall,siloWall,maltDoor};
 })();
 // Floor and ceiling surfaces per hall: 128px canvases tiled once per map cell; the renderer picks a variant per cell.
 (()=>{
